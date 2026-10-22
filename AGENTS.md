@@ -7,3 +7,18 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Timeline contributor entry point
+
+Read [project-wide instructions](.github/copilot-instructions.md) before changing
+the app. Apply the relevant files in [.github/instructions](.github/instructions)
+when working on UI, backend/data, or tests. These are repository instructions,
+not personal machine settings.
+
+Start with the [documentation index](docs/README.md) for product intent,
+architecture, and accepted decisions. [README.md](README.md) covers setup,
+commands, and the current implementation milestone.
+
+Keep the generated Next.js block above intact. Add curated guidance outside
+its markers. Do not copy session transcripts, credentials, personal identities,
+or machine-specific paths into these instructions.

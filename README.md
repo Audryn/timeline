@@ -2,6 +2,13 @@
 
 A Windows-developed, responsive web app for personal life timelines and fictional characters.
 
+## Project guidance
+
+Start with [AGENTS.md](AGENTS.md) and the
+[instruction and design index](docs/README.md). They link the curated product
+brief, architecture, scoped contributor guidance, and decision-record template.
+Keep durable guidance there rather than relying on a particular chat session.
+
 ## Current milestone
 
 This is the first-use implementation, not the finished MVP:
@@ -27,9 +34,11 @@ winget install --id OpenJS.NodeJS.LTS --exact
 Open a fresh PowerShell window after installation, then:
 
 ```powershell
-Set-Location C:\Users\dl2n\work\timeline
+# Run from your cloned or extracted timeline folder.
 npm ci
-Copy-Item .env.example .env.local
+if (!(Test-Path .env.local)) {
+    Copy-Item .env.example .env.local
+}
 npm run dev
 ```
 
@@ -48,6 +57,11 @@ SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
 Use the project's **publishable key**, not a secret/service-role key. The app has no privileged admin client. Environment values stay on the application server; session credentials are stored in HttpOnly cookies, not exposed to browser JavaScript. Never commit `.env.local`.
+
+For `SUPABASE_URL`, paste only the base project URL, not a dashboard address,
+database connection string, `/rest/v1` endpoint, or another environment
+assignment such as `NEXT_PUBLIC_SUPABASE_URL=...`. Preserve existing local
+values when setting up an already-configured working copy.
 
 4. In Supabase Auth, enable email/password with **Confirm email enabled**. Set a minimum password length of 12 to match the UI. Set Site URL to `http://localhost:3000` and allow these development redirect URLs:
 
@@ -71,6 +85,10 @@ For **Reset password**, use:
 ```
 
 The callback also supports PKCE `code` exchanges, but those require the original browser's verifier cookie. Token-hash templates allow confirmation links to establish the session in the browser where the link is opened. Do not log callback query strings or include third-party analytics on callback/account pages.
+
+For local development, open the confirmation email on the computer running
+Timeline. On a phone, `localhost` points to the phone itself. Phone access needs
+a reachable app address and matching auth settings; production auth needs HTTPS.
 
 6. Configure a development-appropriate mail service/SMTP if needed. Supabase's default email service has restrictions/rate limits; it is not production mail delivery.
 7. Restart the app after changing environment values. Register with an inbox you control, follow the confirmation link, create a project and its first person, then add an event.

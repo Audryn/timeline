@@ -1,0 +1,69 @@
+# Project guidance and design history
+
+This directory preserves the useful decisions from Timeline's initial design
+sessions without requiring access to a particular chat, machine, or USB drive.
+It is a starting point for ongoing curation, not a frozen transcript.
+
+## Where guidance belongs
+
+| File | Purpose |
+| --- | --- |
+| [AGENTS.md](../AGENTS.md) | Agent entry point and generated Next.js guidance |
+| [Project instructions](../.github/copilot-instructions.md) | Short, durable repository-wide working rules |
+| [Scoped instructions](../.github/instructions) | UI, backend/domain, and test rules for matching files |
+| [README.md](../README.md) | Setup, commands, implementation milestone, and operational caveats |
+| [Product brief](product.md) | Intended experience, vocabulary, scope, and constraints |
+| [Architecture](architecture.md) | Current mechanisms, code map, and design invariants |
+| [Accepted web-first decision](decisions/0001-web-first-online-first.md) | Why the active approach differs from the original native plan |
+| [Decision template](decisions/TEMPLATE.md) | Structure for proposing and recording later choices |
+
+Copilot repository-wide and path-specific instructions are additive. The scoped
+files have `applyTo` frontmatter. Agent/tool support varies; `AGENTS.md` points
+agents to them explicitly rather than assuming every client loads every file.
+
+## Keep these distinctions clear
+
+- Current code and tests establish what is implemented. README's milestone
+  summarizes it; product/architecture notes must not imply planned work is done.
+- Accepted decisions explain intentional direction. Proposed decisions and
+  templates are not permission to change runtime behavior.
+- If code, instructions, or a requested change disagree, identify the conflict.
+  Do not silently revive the earlier native/offline plan or weaken privacy.
+- Task progress, local credentials, deployment-specific setup, and personal Git
+  identities do not belong in always-loaded project instructions.
+
+## Curation workflow
+
+1. Identify a repeatable rule, a product requirement, or an architectural choice.
+2. Put it in the smallest relevant file; link to a canonical explanation rather
+   than copying the same paragraph into every instruction.
+3. For a significant choice, copy `decisions/TEMPLATE.md` to the next numbered,
+   descriptive filename. Start with status Proposed.
+4. Record alternatives, tradeoffs, consequences, and the evidence/approval that
+   makes a decision Accepted. Use repository links and non-sensitive examples.
+5. Implement approved behavior with focused regressions; update affected docs
+   in the same change. Mark replaced decisions Superseded and link both ways
+   instead of deleting rationale.
+6. Review for contradictions, stale status, broken links, overly broad scopes,
+   and accidental secrets or machine-specific details before committing.
+
+## Small rule template
+
+For a new scoped instruction, create a `.instructions.md` file under
+`.github/instructions`:
+
+```markdown
+---
+applyTo: "src/features/FEATURE/**/*.tsx"
+---
+
+# Feature guidance
+
+- Required invariant: state the observable behavior to preserve.
+- Existing mechanism: name the repository helper or boundary to reuse.
+- Failure behavior: explain how errors and unsaved work stay visible.
+- Verification: identify the focused existing test surface.
+```
+
+Replace the example scope and text; do not create unused instruction files for
+features that do not exist yet. Keep instructions concise and actionable.
