@@ -43,6 +43,10 @@ product boundaries, `docs/architecture.md` for mechanisms, and
 - Prefer Windows PowerShell examples and portable repository-relative paths.
   Use winget for suitable Windows tool installations; do not install tools
   merely to work around an uninvestigated failure.
+- Label setup steps by execution surface: PowerShell, Supabase SQL Editor,
+  Dashboard, or `.env.local`. Provide executable commands or exact field/value
+  examples. For migrations, explain how to paste the SQL contents (for example,
+  `Get-Content -Raw | Set-Clipboard`), not the filename, into the SQL Editor.
 - For substantial independent work, use bounded subagents with explicit file
   ownership and stop conditions. Keep architectural guidance/integration in
   the coordinating context. Do small tasks directly.
@@ -57,8 +61,15 @@ product boundaries, `docs/architecture.md` for mechanisms, and
 - Use the smallest relevant tests, then typecheck/lint/build where affected.
   Follow `.github/instructions/testing.instructions.md` for runner details.
   Documentation-only edits need link/scope/consistency checks, not app builds.
-- Stop the project's dev server before `npm ci` or the browser suite. Windows
-  dependency files can be locked, and Next permits one dev server per project.
+- Check for an existing project dev server before launching another. Stop it
+  before `npm ci` or the browser suite: Windows dependency files can be locked,
+  and Next permits one dev server per project. If work stops a running preview,
+  restore it afterward and verify its HTTP response before handing back the URL.
+- Diagnose account setup failures in layers: app HTTP reachability,
+  `/api/session`, redacted configuration checks, then hosted authentication,
+  callback/email, or migration checks as appropriate. Report the failing layer
+  without exposing credentials. `configured: true` indicates configuration
+  presence, not proof that hosted authentication, email, or migrations work.
 - Do not overwrite an existing `.env.local` with `.env.example`. Never print
   its values. Supabase needs the base HTTP(S) project URL, not a copied
   environment assignment, dashboard URL, or database connection string.
