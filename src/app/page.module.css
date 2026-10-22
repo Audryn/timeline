@@ -1,0 +1,502 @@
+.skipLink {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 16px;
+  padding: 12px 20px;
+  transform: translateY(-160%);
+  border-radius: 8px;
+  background: var(--green);
+  color: white;
+}
+
+.skipLink:focus {
+  transform: none;
+}
+
+.siteHeader {
+  display: flex;
+  min-height: 100px;
+  max-width: 1248px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 20px 44px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  text-decoration: none;
+}
+
+.brandDot {
+  color: var(--green);
+}
+
+.brandMark {
+  position: relative;
+  display: grid;
+  width: 23px;
+  height: 31px;
+  justify-items: center;
+  align-content: space-between;
+  margin-right: 12px;
+  padding: 2px 0;
+}
+
+.brandMark::before {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 11px;
+  width: 1px;
+  background: #96b3a0;
+  content: "";
+}
+
+.brandMark span {
+  z-index: 1;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--paper);
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.brandMark span:nth-child(2) {
+  background: #9aaf87;
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.navigation a {
+  text-decoration: none;
+}
+
+.workspaceLink {
+  color: var(--muted);
+}
+
+.workspaceLink span {
+  margin-left: 5px;
+}
+
+.headerSignIn {
+  padding: 8px 19px;
+  border: 1px solid #cbd4c7;
+  border-radius: 7px;
+}
+
+.navigation a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.mainContent {
+  outline-offset: -4px;
+}
+
+.welcome {
+  max-width: 1248px;
+  margin: 0 auto;
+  padding: 0 44px 28px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: center;
+  gap: clamp(40px, 7vw, 100px);
+  padding: 60px 0 76px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+
+.eyebrow > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.heroCopy h1 {
+  margin-bottom: 25px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(58px, 6.5vw, 85px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -3.8px;
+}
+
+.heroCopy h1 em {
+  color: var(--green);
+  font-weight: 400;
+}
+
+.heroDescription {
+  max-width: 375px;
+  margin-bottom: 30px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.primaryButton {
+  display: inline-flex;
+  min-height: 51px;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  padding: 12px 22px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: var(--green);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 160ms ease;
+}
+
+.primaryButton:hover {
+  background: #184d40;
+}
+
+.primaryButton span {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.heroActions p {
+  margin: 15px 0 25px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.heroActions p a {
+  font-weight: 600;
+}
+
+.privacyNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.privacyNote svg {
+  stroke: var(--muted);
+  stroke-width: 1.4;
+}
+
+.storyPaper {
+  position: relative;
+  padding: 27px 33px 22px;
+  border: 1px solid #d8decf;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 16px 45px #34482f06, 7px 8px 0 -1px #e9ecdf;
+}
+
+.paperHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 23px;
+}
+
+.paperOverline {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.paperStar {
+  color: #8d996e;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.storyPaper h2 {
+  margin-bottom: 26px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+}
+
+.storyRail {
+  position: relative;
+  display: grid;
+  gap: 22px;
+}
+
+.storyRail::before {
+  position: absolute;
+  top: 14px;
+  bottom: 30px;
+  left: 13px;
+  width: 1px;
+  background: #d4dfcc;
+  content: "";
+}
+
+.storyPrompt {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 17px;
+}
+
+.promptNumber {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #d3decb;
+  border-radius: 50%;
+  background: #eff3e9;
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.promptLabel {
+  margin: 1px 0 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.storyPrompt h3 {
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.storyPrompt div > p:last-child {
+  max-width: 260px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.paperFootnote {
+  margin: 25px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #e4e7dc;
+  color: var(--muted);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  font-style: italic;
+  text-align: center;
+}
+
+.waysToBegin {
+  padding: 35px 0 36px;
+  border-top: 1px solid var(--line);
+}
+
+.sectionIntro .eyebrow {
+  margin-bottom: 9px;
+  font-size: 9px;
+}
+
+.sectionIntro h2 {
+  margin-bottom: 30px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.6px;
+}
+
+.possibilities {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 38px;
+}
+
+.possibilities article {
+  position: relative;
+  padding-left: 38px;
+}
+
+.featureIndex {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  color: #7d8e73;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-style: italic;
+}
+
+.possibilities h3 {
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.possibilities p {
+  max-width: 265px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.welcomeFooter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.welcomeFooter p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.welcomeFooter a {
+  flex-shrink: 0;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.welcomeFooter a:hover {
+  text-decoration: underline;
+}
+
+.welcomeFooter a span {
+  margin-left: 8px;
+}
+
+@media (min-width: 1440px) {
+  .hero {
+    padding-top: 85px;
+    padding-bottom: 95px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    gap: 35px;
+  }
+
+  .storyPaper {
+    padding: 25px;
+  }
+
+  .storyPaper h2 {
+    font-size: 27px;
+  }
+
+  .heroCopy h1 {
+    font-size: 64px;
+  }
+
+  .possibilities {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 700px) {
+  .siteHeader {
+    min-height: 82px;
+    gap: 12px;
+    padding: 18px 22px;
+  }
+
+  .brand {
+    font-size: 24px;
+  }
+
+  .navigation {
+    flex-direction: column-reverse;
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .workspaceLink {
+    font-size: 11px;
+  }
+
+  .headerSignIn {
+    padding: 5px 17px;
+  }
+
+  .welcome {
+    padding: 0 24px 25px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 45px;
+    padding: 35px 0 45px;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(58px, 12vw, 78px);
+    letter-spacing: -3px;
+  }
+
+  .heroDescription {
+    max-width: 420px;
+    font-size: 16px;
+  }
+
+  .storyPaper {
+    max-width: 500px;
+    padding: 25px;
+  }
+
+  .possibilities {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .possibilities p {
+    max-width: 420px;
+  }
+
+  .welcomeFooter {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
