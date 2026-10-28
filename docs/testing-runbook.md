@@ -29,17 +29,17 @@ requires network access; normal fixture tests must not use hosted services.
 **PowerShell:**
 
 ```powershell
-corepack pcorepack pnpm test:unit
-corepack pcorepack pnpm test:db
-corepack pcorepack pnpm test:browser
+corepack pnpm test:unit
+corepack pnpm test:db
+corepack pnpm test:browser
 ```
 
 Use focused selectors while changing a feature:
 
 ```powershell
-corepack pnpm test -- src\domain\dates.test.ts -t "validates real leap days"
-corepack pnpm test -- tests\server\route-boundaries.test.ts
-corepack pcorepack pnpm test:e2e -- --grep "a stale edit"
+corepack pnpm test src\domain\dates.test.ts -t "validates real leap days"
+corepack pnpm test tests\server\route-boundaries.test.ts
+corepack pnpm test:e2e --grep "a stale edit"
 ```
 
 The local runner uses explicit fixture configuration instead of the developer's
@@ -54,18 +54,25 @@ locks or change the project's manual-preview configuration to hide collisions.
 ### Full local checkpoint
 
 ```powershell
-corepack pcorepack pnpm test:local
+corepack pnpm test:local
 ```
 
 This is the integrated local gate. It includes the appropriate type, lint,
 logic/database, browser, built-app, and web-quality checks. A failed stage
 stops the aggregate. There is no automatic cloud fallback.
 
+The generated OpenAPI specification is checked for structural validity and
+schema drift first. `corepack pnpm api:check` runs that check plus actual
+production-mode HTTP contracts for every documented operation using the
+loopback provider. See [API notes](API.md); no hosted service is contacted.
+`corepack pnpm test:smoke` separately starts/stops an owned app and checks
+the public screens and unconfigured session.
+
 For targeted framework or design checks:
 
 ```powershell
-corepack pcorepack pnpm test:built
-corepack pcorepack pnpm test:quality
+corepack pnpm test:built
+corepack pnpm test:quality
 ```
 
 Built-app tests exercise a real production-mode Next server with a strict
@@ -77,7 +84,7 @@ provider/staging/deployment requirement.
 If work required stopping a manual preview, restore it afterward:
 
 ```powershell
-corepack pnpm dev -- --hostname localhost --port 3000
+corepack pnpm dev --hostname localhost --port 3000
 ```
 
 **Browser:** wait for Ready, open `http://localhost:3000`, and verify it responds.
@@ -112,7 +119,7 @@ supabase --version
 # Set this to the exact approved installed version reported above.
 $env:TIMELINE_SUPABASE_VERSION = "REPLACE_WITH_APPROVED_CLI_VERSION"
 node apps\web\scripts\testing\provider.mjs check
-corepack pcorepack pnpm test:integration
+corepack pnpm test:integration
 ```
 
 If the CLI is not on PATH, set `TIMELINE_SUPABASE_CLI` to its actual executable
@@ -159,7 +166,7 @@ GitHub account, backend, synthetic user, or fixture project.
 ```powershell
 $env:TIMELINE_DEPLOYED_ORIGIN = "https://YOUR_APPROVED_DEPLOYMENT"
 $env:TIMELINE_APPROVED_ORIGIN = "https://YOUR_APPROVED_DEPLOYMENT"
-corepack pcorepack pnpm test:deployed:public
+corepack pnpm test:deployed:public
 ```
 
 Replace both placeholders with the same exact approved origin. Paths,
@@ -187,7 +194,7 @@ TIMELINE_SYNTHETIC_PROJECT_ID
 Then run:
 
 ```powershell
-corepack pcorepack pnpm test:deployed:read
+corepack pnpm test:deployed:read
 ```
 
 Do not type real passwords in shared shell history or use somebody's normal

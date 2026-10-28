@@ -1,0 +1,1842 @@
+openapi: 3.1.0
+info:
+  title: Timeline HTTP API
+  version: 0.1.0
+  description: Existing web cookie API; native authentication is not implemented.
+    Zod schemas are canonical. Gregorian calendar validity, range ordering,
+    unique participant/category IDs and request replay/version rules are
+    enforced beyond structural JSON Schema.
+servers:
+  - url: /
+    description: Same-origin application backend
+components:
+  securitySchemes:
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: sb-<project-ref>-auth-token
+      description: Supabase SSR HttpOnly session cookie; actual project-specific name
+        may be chunked (.0/.1). Secure in production, SameSite=Lax. No
+        bearer-token alternative exists yet.
+  schemas:
+    CivilDate:
+      type: object
+      properties:
+        year:
+          type: integer
+          minimum: 1
+          maximum: 9999
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        day:
+          type: integer
+          minimum: 1
+          maximum: 31
+      required:
+        - year
+      additionalProperties: false
+    EventDate:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: point
+            value:
+              type: object
+              properties:
+                year:
+                  type: integer
+                  minimum: 1
+                  maximum: 9999
+                month:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                day:
+                  type: integer
+                  minimum: 1
+                  maximum: 31
+              required:
+                - year
+              additionalProperties: false
+            approximate:
+              default: false
+              type: boolean
+          required:
+            - kind
+            - value
+          additionalProperties: false
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: range
+            start:
+              type: object
+              properties:
+                year:
+                  type: integer
+                  minimum: 1
+                  maximum: 9999
+                month:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                day:
+                  type: integer
+                  minimum: 1
+                  maximum: 31
+              required:
+                - year
+              additionalProperties: false
+            end:
+              anyOf:
+                - type: object
+                  properties:
+                    year:
+                      type: integer
+                      minimum: 1
+                      maximum: 9999
+                    month:
+                      type: integer
+                      minimum: 1
+                      maximum: 12
+                    day:
+                      type: integer
+                      minimum: 1
+                      maximum: 31
+                  required:
+                    - year
+                  additionalProperties: false
+                - type: "null"
+            approximate:
+              default: false
+              type: boolean
+          required:
+            - kind
+            - start
+            - end
+          additionalProperties: false
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: season
+            season:
+              type: string
+              enum:
+                - spring
+                - summer
+                - autumn
+                - winter
+            year:
+              type: integer
+              minimum: 1
+              maximum: 9998
+            approximate:
+              default: false
+              type: boolean
+          required:
+            - kind
+            - season
+            - year
+          additionalProperties: false
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: custom
+            text:
+              type: string
+              minLength: 1
+              maxLength: 200
+            start:
+              anyOf:
+                - type: object
+                  properties:
+                    year:
+                      type: integer
+                      minimum: 1
+                      maximum: 9999
+                    month:
+                      type: integer
+                      minimum: 1
+                      maximum: 12
+                    day:
+                      type: integer
+                      minimum: 1
+                      maximum: 31
+                  required:
+                    - year
+                  additionalProperties: false
+                - type: "null"
+            end:
+              anyOf:
+                - type: object
+                  properties:
+                    year:
+                      type: integer
+                      minimum: 1
+                      maximum: 9999
+                    month:
+                      type: integer
+                      minimum: 1
+                      maximum: 12
+                    day:
+                      type: integer
+                      minimum: 1
+                      maximum: 31
+                  required:
+                    - year
+                  additionalProperties: false
+                - type: "null"
+          required:
+            - kind
+            - text
+            - start
+            - end
+          additionalProperties: false
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: unknown
+          required:
+            - kind
+          additionalProperties: false
+    Credentials:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - email
+        - password
+      additionalProperties: false
+    EmailInput:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+      required:
+        - email
+      additionalProperties: false
+    PasswordInput:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+      required:
+        - password
+      additionalProperties: false
+    ProjectInput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        personName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        personKind:
+          type: string
+          enum:
+            - real
+            - fictional
+        hemisphere:
+          type: string
+          enum:
+            - northern
+            - southern
+      required:
+        - requestId
+        - name
+        - personName
+        - personKind
+        - hemisphere
+      additionalProperties: false
+    PersonInput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          enum:
+            - real
+            - fictional
+      required:
+        - requestId
+        - name
+        - kind
+      additionalProperties: false
+    EventInput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 20000
+        location:
+          type: string
+          maxLength: 300
+        date:
+          oneOf:
+            - type: object
+              properties:
+                kind:
+                  type: string
+                  const: point
+                value:
+                  type: object
+                  properties:
+                    year:
+                      type: integer
+                      minimum: 1
+                      maximum: 9999
+                    month:
+                      type: integer
+                      minimum: 1
+                      maximum: 12
+                    day:
+                      type: integer
+                      minimum: 1
+                      maximum: 31
+                  required:
+                    - year
+                  additionalProperties: false
+                approximate:
+                  default: false
+                  type: boolean
+              required:
+                - kind
+                - value
+              additionalProperties: false
+            - type: object
+              properties:
+                kind:
+                  type: string
+                  const: range
+                start:
+                  type: object
+                  properties:
+                    year:
+                      type: integer
+                      minimum: 1
+                      maximum: 9999
+                    month:
+                      type: integer
+                      minimum: 1
+                      maximum: 12
+                    day:
+                      type: integer
+                      minimum: 1
+                      maximum: 31
+                  required:
+                    - year
+                  additionalProperties: false
+                end:
+                  anyOf:
+                    - type: object
+                      properties:
+                        year:
+                          type: integer
+                          minimum: 1
+                          maximum: 9999
+                        month:
+                          type: integer
+                          minimum: 1
+                          maximum: 12
+                        day:
+                          type: integer
+                          minimum: 1
+                          maximum: 31
+                      required:
+                        - year
+                      additionalProperties: false
+                    - type: "null"
+                approximate:
+                  default: false
+                  type: boolean
+              required:
+                - kind
+                - start
+                - end
+              additionalProperties: false
+            - type: object
+              properties:
+                kind:
+                  type: string
+                  const: season
+                season:
+                  type: string
+                  enum:
+                    - spring
+                    - summer
+                    - autumn
+                    - winter
+                year:
+                  type: integer
+                  minimum: 1
+                  maximum: 9998
+                approximate:
+                  default: false
+                  type: boolean
+              required:
+                - kind
+                - season
+                - year
+              additionalProperties: false
+            - type: object
+              properties:
+                kind:
+                  type: string
+                  const: custom
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                start:
+                  anyOf:
+                    - type: object
+                      properties:
+                        year:
+                          type: integer
+                          minimum: 1
+                          maximum: 9999
+                        month:
+                          type: integer
+                          minimum: 1
+                          maximum: 12
+                        day:
+                          type: integer
+                          minimum: 1
+                          maximum: 31
+                      required:
+                        - year
+                      additionalProperties: false
+                    - type: "null"
+                end:
+                  anyOf:
+                    - type: object
+                      properties:
+                        year:
+                          type: integer
+                          minimum: 1
+                          maximum: 9999
+                        month:
+                          type: integer
+                          minimum: 1
+                          maximum: 12
+                        day:
+                          type: integer
+                          minimum: 1
+                          maximum: 31
+                      required:
+                        - year
+                      additionalProperties: false
+                    - type: "null"
+              required:
+                - kind
+                - text
+                - start
+                - end
+              additionalProperties: false
+            - type: object
+              properties:
+                kind:
+                  type: string
+                  const: unknown
+              required:
+                - kind
+              additionalProperties: false
+        personIds:
+          minItems: 1
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        categoryIds:
+          maxItems: 50
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+      required:
+        - requestId
+        - id
+        - version
+        - title
+        - description
+        - location
+        - date
+        - personIds
+        - categoryIds
+      additionalProperties: false
+    ProjectCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+      required:
+        - id
+    Person:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        project_id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - real
+            - fictional
+      required:
+        - id
+        - project_id
+        - name
+        - kind
+    EventSaved:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        version:
+          type: number
+      required:
+        - id
+        - version
+    Session:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        user:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+                email:
+                  type: string
+              required:
+                - id
+                - email
+            - type: "null"
+      required:
+        - configured
+        - user
+    Projects:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+          name:
+            type: string
+          hemisphere:
+            type: string
+            enum:
+              - northern
+              - southern
+        required:
+          - id
+          - name
+          - hemisphere
+    ProjectDetail:
+      type: object
+      properties:
+        project:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+            name:
+              type: string
+            hemisphere:
+              type: string
+              enum:
+                - northern
+                - southern
+          required:
+            - id
+            - name
+            - hemisphere
+        people:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              project_id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              name:
+                type: string
+              kind:
+                type: string
+                enum:
+                  - real
+                  - fictional
+            required:
+              - id
+              - project_id
+              - name
+              - kind
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              project_id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              name:
+                type: string
+              color:
+                type: string
+            required:
+              - id
+              - project_id
+              - name
+              - color
+      required:
+        - project
+        - people
+        - categories
+    EventPage:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              project_id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              version:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              title:
+                type: string
+              description:
+                type: string
+              location:
+                type: string
+              date:
+                oneOf:
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        const: point
+                      value:
+                        type: object
+                        properties:
+                          year:
+                            type: integer
+                            minimum: 1
+                            maximum: 9999
+                          month:
+                            type: integer
+                            minimum: 1
+                            maximum: 12
+                          day:
+                            type: integer
+                            minimum: 1
+                            maximum: 31
+                        required:
+                          - year
+                        additionalProperties: false
+                      approximate:
+                        default: false
+                        type: boolean
+                    required:
+                      - kind
+                      - value
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        const: range
+                      start:
+                        type: object
+                        properties:
+                          year:
+                            type: integer
+                            minimum: 1
+                            maximum: 9999
+                          month:
+                            type: integer
+                            minimum: 1
+                            maximum: 12
+                          day:
+                            type: integer
+                            minimum: 1
+                            maximum: 31
+                        required:
+                          - year
+                        additionalProperties: false
+                      end:
+                        anyOf:
+                          - type: object
+                            properties:
+                              year:
+                                type: integer
+                                minimum: 1
+                                maximum: 9999
+                              month:
+                                type: integer
+                                minimum: 1
+                                maximum: 12
+                              day:
+                                type: integer
+                                minimum: 1
+                                maximum: 31
+                            required:
+                              - year
+                            additionalProperties: false
+                          - type: "null"
+                      approximate:
+                        default: false
+                        type: boolean
+                    required:
+                      - kind
+                      - start
+                      - end
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        const: season
+                      season:
+                        type: string
+                        enum:
+                          - spring
+                          - summer
+                          - autumn
+                          - winter
+                      year:
+                        type: integer
+                        minimum: 1
+                        maximum: 9998
+                      approximate:
+                        default: false
+                        type: boolean
+                    required:
+                      - kind
+                      - season
+                      - year
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        const: custom
+                      text:
+                        type: string
+                        minLength: 1
+                        maxLength: 200
+                      start:
+                        anyOf:
+                          - type: object
+                            properties:
+                              year:
+                                type: integer
+                                minimum: 1
+                                maximum: 9999
+                              month:
+                                type: integer
+                                minimum: 1
+                                maximum: 12
+                              day:
+                                type: integer
+                                minimum: 1
+                                maximum: 31
+                            required:
+                              - year
+                            additionalProperties: false
+                          - type: "null"
+                      end:
+                        anyOf:
+                          - type: object
+                            properties:
+                              year:
+                                type: integer
+                                minimum: 1
+                                maximum: 9999
+                              month:
+                                type: integer
+                                minimum: 1
+                                maximum: 12
+                              day:
+                                type: integer
+                                minimum: 1
+                                maximum: 31
+                            required:
+                              - year
+                            additionalProperties: false
+                          - type: "null"
+                    required:
+                      - kind
+                      - text
+                      - start
+                      - end
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        const: unknown
+                    required:
+                      - kind
+                    additionalProperties: false
+              start_date:
+                type:
+                  - string
+                  - "null"
+              end_date:
+                type:
+                  - string
+                  - "null"
+              person_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              category_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              created_at:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              updated_at:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            required:
+              - id
+              - project_id
+              - version
+              - title
+              - description
+              - location
+              - date
+              - start_date
+              - end_date
+              - person_ids
+              - category_ids
+        hasMore:
+          type: boolean
+      required:
+        - events
+        - hasMore
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+paths:
+  /api/session:
+    get:
+      operationId: session
+      summary: Inspect configuration presence and verified current user
+      description: configured=true means values exist, not proof of provider health.
+        Missing/unconfirmed sessions return user=null.
+      security: []
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/signup:
+    post:
+      operationId: signup
+      summary: Create account and request email confirmation
+      description: Requires 12–128 password characters; successful signup does not
+        establish verified access.
+      security: []
+      parameters:
+        - &a1
+          name: Origin
+          in: header
+          required: true
+          description: Must exactly equal the server-configured APP_ORIGIN. Cookie auth is
+            not a native bearer-token contract.
+          schema:
+            type: string
+            format: uri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Credentials"
+                - type: object
+                  properties:
+                    password:
+                      type: string
+                      minLength: 12
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Provider account/email rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/signin:
+    post:
+      operationId: signin
+      summary: Sign in using email/password; set server session cookies
+      security: []
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Provider account/email rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/reset:
+    post:
+      operationId: reset
+      summary: Request password-recovery email
+      description: Generic eligibility message is not proof of delivery. No automatic
+        resend.
+      security: []
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Provider account/email rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/resend:
+    post:
+      operationId: resend
+      summary: Request another confirmation email
+      security: []
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Provider account/email rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/password:
+    post:
+      operationId: password
+      summary: Change password using a verified recovery/session cookie
+      security: &a2
+        - cookieSession: []
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/signout:
+    post:
+      operationId: signout
+      summary: Sign out this session
+      description: Request body is ignored. Cross-tab draft protection and local draft
+        cleanup remain client responsibilities.
+      security: []
+      parameters:
+        - *a1
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/callback:
+    get:
+      operationId: callback
+      summary: Consume confirmation/recovery token or PKCE code
+      security: []
+      description: This GET consumes a token and is NOT a read-only production probe.
+        Fixed same-origin redirect only. PKCE requires the originating verifier
+        cookie.
+      parameters:
+        - name: token_hash
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - signup
+              - recovery
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: flow
+          in: query
+          schema:
+            type: string
+            enum:
+              - recovery
+      responses:
+        "307":
+          description: Projects on success; account password mode for recovery;
+            notice=expired/failed otherwise.
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: uri
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+            Referrer-Policy:
+              description: Current proxy overrides the callback's route-level no-referrer
+                value.
+              schema:
+                type: string
+                const: same-origin
+        "500":
+          description: APP_ORIGIN missing/invalid before a redirect can be constructed.
+  /api/projects:
+    get:
+      operationId: projects
+      summary: List up to 100 newest owned projects
+      description: Bare array; no pagination or hasMore indicator.
+      security: *a2
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projects"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createProject
+      summary: Atomically create project, first person and 13 categories
+      security: *a2
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCreated"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project unavailable or account action unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Stale version or request identity reused with different content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/projects/{id}:
+    parameters:
+      - &a3
+        name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: project
+      summary: Read owned project, people and categories
+      security: *a2
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project unavailable or account action unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/projects/{id}/people:
+    parameters:
+      - *a3
+    post:
+      operationId: addPerson
+      summary: Add a real person or fictional character
+      security: *a2
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project unavailable or account action unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Stale version or request identity reused with different content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/projects/{id}/events:
+    parameters:
+      - *a3
+    get:
+      operationId: events
+      summary: List filtered events or fetch a specific event
+      description: 50 rows, ascending placement date then ID; Undated last. hasMore is
+        true for exactly 50 rows, not proof of a next row. Event lookup
+        validates offset then ignores other filters. A valid unavailable project
+        currently returns an empty list.
+      security: *a2
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventPage"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project unavailable or account action unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1000000
+            default: 0
+        - name: event
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: person
+          in: query
+          style: form
+          explode: true
+          description: Repeated UUID query parameters; OR within a selection, AND between
+            filter types.
+          schema:
+            type: array
+            maxItems: 50
+            items:
+              type: string
+              format: uuid
+        - name: category
+          in: query
+          style: form
+          explode: true
+          description: Repeated UUID query parameters; OR within a selection, AND between
+            filter types.
+          schema:
+            type: array
+            maxItems: 50
+            items:
+              type: string
+              format: uuid
+        - name: q
+          in: query
+          description: Trimmed literal substring search.
+          schema:
+            type: string
+            maxLength: 200
+        - name: from
+          in: query
+          description: Inclusive date overlap; empty string means no bound. from must not
+            exceed to.
+          schema:
+            anyOf:
+              - type: string
+                format: date
+              - const: ""
+        - name: to
+          in: query
+          description: Inclusive date overlap; empty string means no bound. from must not
+            exceed to.
+          schema:
+            anyOf:
+              - type: string
+                format: date
+              - const: ""
+        - name: undated
+          in: query
+          description: Only the literal string false excludes Undated; all other values
+            include it.
+          schema:
+            type: string
+            default: "true"
+    post:
+      operationId: saveEvent
+      summary: Create/update an event with replay identity and expected version
+      description: version=0 creates. Edits use last acknowledged version; replay
+        exact requestId+payload after an uncertain result. Atomic
+        participant/category links. No automatic retry.
+      security: *a2
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventSaved"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: A verified signed-in session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, email unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project unavailable or account action unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Stale version or request identity reused with different content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"

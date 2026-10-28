@@ -7,7 +7,7 @@ const eslintConfig = defineConfig([
   js.configs.recommended,
   ...ts.configs.recommended,
   {
-    files: ["scripts/testing/**/*.mjs"],
+    files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: { process: "readonly", console: "readonly", URL: "readonly", fetch: "readonly", Buffer: "readonly", AbortSignal: "readonly", setTimeout: "readonly", clearTimeout: "readonly" },
     },

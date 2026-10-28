@@ -59,7 +59,7 @@ cross-browser coverage; the quality lane and later browser work are separate.
 
 No current test result should be inferred from this inventory. Historical
 passing runs do not establish that a later checkout/environment still passes.
-Use `corepack pcorepack pnpm test:local` for the integrated credential-free automation gate.
+Use `corepack pnpm test:local` for the integrated credential-free automation gate.
 The [project plan](project-plan.md) separates remaining product capabilities
 from automation and external-runner prerequisites.
 
@@ -111,10 +111,10 @@ Never clear browser site data while a meaningful draft remains unsaved.
 
 ```powershell
 node --version
-npm --version
+corepack pnpm --version
 git rev-parse --short HEAD
 git status --short
-corepack pnpm dev -- --hostname localhost --port 3000
+corepack pnpm dev --hostname localhost --port 3000
 ```
 
 First check whether a project server is already running. Reuse a healthy
@@ -154,7 +154,7 @@ git rev-parse --short HEAD
 corepack pnpm install --frozen-lockfile
 # Continue only if dependency installation succeeded.
 $env:APP_ORIGIN = "http://localhost:3200"
-corepack pnpm dev -- --hostname localhost --port 3200
+corepack pnpm dev --hostname localhost --port 3200
 ```
 
 **Browser:** use `http://localhost:3200/api/session` and confirm
@@ -360,7 +360,7 @@ No new tooling or package installation is requested by this document.
 For an integrated first-use change:
 
 ```powershell
-corepack pcorepack pnpm test:local
+corepack pnpm test:local
 ```
 
 This runs typecheck, lint, unit/component/route tests, SQL/contracts, browser
@@ -379,13 +379,13 @@ Focused examples:
 
 ```powershell
 # One date test by name.
-corepack pnpm test -- src\domain\dates.test.ts -t "validates real leap days"
+corepack pnpm test src\domain\dates.test.ts -t "validates real leap days"
 
 # Related data/draft regressions in one runner.
-corepack pnpm test -- src\lib\drafts.test.ts tests\integration\first-use.test.ts tests\integration\filters.test.ts
+corepack pnpm test src\lib\drafts.test.ts tests\integration\first-use.test.ts tests\integration\filters.test.ts
 
 # One browser scenario; this also starts its own test server.
-corepack pcorepack pnpm test:e2e -- tests\e2e\first-use.spec.ts --grep "a stale edit"
+corepack pnpm test:e2e tests\e2e\first-use.spec.ts --grep "a stale edit"
 ```
 
 Use the smallest relevant selectors while changing code. Broaden to affected
@@ -395,7 +395,7 @@ changes need links/consistency checks, not runtime suites.
 After testing, if a preview was stopped, restore and verify it:
 
 ```powershell
-corepack pnpm dev -- --hostname localhost --port 3000
+corepack pnpm dev --hostname localhost --port 3000
 ```
 
 Wait for Ready. **Browser:** open `http://localhost:3000` and confirm the page

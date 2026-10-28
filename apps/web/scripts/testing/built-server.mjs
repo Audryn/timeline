@@ -9,6 +9,12 @@ import { stopOwnedTree } from "./process.mjs";
 const port = 3102;
 const owner = "10000000-0000-4000-8000-000000000001";
 const project = "20000000-0000-4000-8000-000000000001";
+const person = { id: "30000000-0000-4000-8000-000000000001", project_id: project, name: "Synthetic person", kind: "fictional" };
+const event = {
+  id: "40000000-0000-4000-8000-000000000001", project_id: project, version: 1,
+  title: "Synthetic event", description: "", location: "", date: { kind: "unknown" },
+  start_date: null, end_date: null, person_ids: [person.id], category_ids: [],
+};
 const user = {
   id: owner, email: "fixture@example.invalid", email_confirmed_at: "2020-01-01T00:00:00Z",
   created_at: "2020-01-01T00:00:00Z", aud: "authenticated", role: "authenticated",
@@ -39,6 +45,33 @@ const provider = http.createServer(async (request, response) => {
   if (url.pathname === "/auth/v1/logout" && request.method === "POST") { response.writeHead(204); response.end(); return; }
   if (url.pathname === "/rest/v1/projects" && request.method === "GET" && request.headers.authorization === `Bearer ${token}`) {
     response.end(JSON.stringify([{ id: project, name: "Synthetic built project", hemisphere: "northern" }])); return;
+  }
+  if (["/auth/v1/signup", "/auth/v1/recover", "/auth/v1/resend", "/auth/v1/verify"].includes(url.pathname) && request.method === "POST") {
+    let raw = "";
+    for await (const chunk of request) raw += chunk;
+    const payload = JSON.parse(raw);
+    if (payload.email === "rate-limit@example.invalid") {
+      response.writeHead(429); response.end(JSON.stringify({ code: "over_email_send_rate_limit", message: "Synthetic rate limit" })); return;
+    }
+    response.end(JSON.stringify(url.pathname.endsWith("/verify")
+      ? { access_token: token, token_type: "bearer", expires_in: 3600, refresh_token: "fixture-refresh-token", user }
+      : url.pathname.endsWith("/signup") ? { user } : {})); return;
+  }
+  if (url.pathname === "/auth/v1/user" && request.method === "PUT") {
+    response.end(JSON.stringify(user)); return;
+  }
+  if (url.pathname === "/rest/v1/people" && request.method === "GET") {
+    response.end(JSON.stringify([person])); return;
+  }
+  if (url.pathname === "/rest/v1/categories" && request.method === "GET") {
+    response.end(JSON.stringify([])); return;
+  }
+  if (url.pathname === "/rest/v1/events" && request.method === "GET") {
+    response.end(JSON.stringify([event])); return;
+  }
+  if (["/rest/v1/rpc/create_project", "/rest/v1/rpc/add_person", "/rest/v1/rpc/save_event"].includes(url.pathname) && request.method === "POST") {
+    response.end(JSON.stringify(url.pathname.endsWith("/create_project") ? { id: project }
+      : url.pathname.endsWith("/add_person") ? person : { id: event.id, version: 1 })); return;
   }
   unexpected++;
   response.writeHead(500);

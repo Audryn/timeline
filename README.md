@@ -38,7 +38,8 @@ Without Supabase configuration the app displays setup guidance. It does not pret
 
 ## Run on Windows
 
-Node.js 24 LTS and npm are required. Node was installed using winget during the initial setup:
+Node.js 24 and the pinned pnpm version are required. Enable pnpm with
+`corepack enable pnpm`. Node was installed using winget during the initial setup:
 
 ```powershell
 winget install --id OpenJS.NodeJS.LTS --exact
@@ -61,7 +62,7 @@ Open `http://localhost:3000`. The setup guide is also available at `http://local
 
 1. Create a dedicated development project at `https://supabase.com/dashboard`. Do not use a production project containing other application data.
 2. In its SQL Editor, run the entire `apps\web\supabase\migrations\202610200001_first_use.sql` migration once. Alternatively, use the Supabase CLI migration workflow. Future schema changes should also be migrations.
-3. Set these values in the ignored `.env.local` file:
+3. Set these values in the ignored `apps\web\.env.local` file:
 
 ```dotenv
 APP_ORIGIN=http://localhost:3000
@@ -132,7 +133,7 @@ read-only deployment probes. See the [project plan](docs/project-plan.md) for
 remaining feature and infrastructure gates.
 
 ```powershell
-corepack pcorepack pnpm test:local
+corepack pnpm test:local
 ```
 
 The aggregate runs typecheck, lint, unit/components/routes, database contracts,
@@ -181,7 +182,7 @@ For a local production build:
 
 ```powershell
 corepack pnpm build
-npm start
+corepack pnpm start
 ```
 
 Public/private responses are served through nonce-based CSP with dynamic rendering and private no-store headers. For production, deploy to a supported Node host over HTTPS, set the exact HTTPS `APP_ORIGIN`, update the Auth Site URL/templates/redirect allowlist, and configure production email. Cookies require HTTPS when `NODE_ENV=production`; use the development server for local HTTP account testing.

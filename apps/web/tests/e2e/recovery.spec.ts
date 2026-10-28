@@ -4,20 +4,21 @@ import {
 } from "./fixtures/workspace";
 
 const now = new Date("2026-10-20T12:00:00Z");
-const localSaved = "Draft saved on this browser. Not yet saved to your account.";
 
 test("a stale local draft in concurrent tabs cannot overwrite the winning browser revision", async ({ page, context }) => {
   const state = await workspace(context);
   const other = await context.newPage();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(new Date(now.getTime() + 1000));
   for (const tab of [page, other]) {
     await tab.goto(`/projects/${project}`);
-    await tab.clock.install({ time: now });
-    await tab.clock.pauseAt(new Date(now.getTime() + 1000));
     await openNew(tab);
   }
   await page.getByLabel("What happened?").fill("Winning local draft");
-  await page.clock.runFor(401);
-  await expect(page.getByRole("status").filter({ hasText: localSaved })).toBeVisible();
+  await page.getByRole("button", { name: "Close editor" }).click();
+  await expect(page.getByLabel("What happened?")).toHaveCount(0);
+  await expect.poll(async () => (await storedDrafts(page)).map(draft => draft.form.title))
+    .toEqual(["Winning local draft"]);
   await other.getByLabel("What happened?").fill("Stale tab's recoverable text");
   await other.clock.runFor(401);
   await expect(other.getByRole("alert").filter({ hasText: "This draft changed in another tab." })).toBeVisible();
@@ -31,7 +32,6 @@ test("a stale local draft in concurrent tabs cannot overwrite the winning browse
   expect(JSON.parse(Buffer.concat(chunks).toString()).form.title).toBe("Stale tab's recoverable text");
   expect(state.attempts).toHaveLength(0);
   expect((await storedDrafts(page)).map((draft) => draft.form.title)).toEqual(["Winning local draft"]);
-  await page.getByRole("button", { name: "Close editor" }).click();
   await openNew(page);
   await expect(page.getByLabel("What happened?")).toHaveValue("Winning local draft");
 });

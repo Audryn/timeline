@@ -14,6 +14,9 @@ It is a starting point for ongoing curation, not a frozen transcript.
 | [README.md](../README.md) | Setup, commands, implementation milestone, and operational caveats |
 | [Product brief](product.md) | Intended experience, vocabulary, scope, and constraints |
 | [Architecture](architecture.md) | Current mechanisms, code map, and design invariants |
+| [API contract](openapi.yaml) and [API notes](API.md) | Generated HTTP schemas, validation and preserved inconsistencies |
+| [User flows](FLOWS.md) | Screen/API map for the web app and future native client |
+| [Native preparation decision](decisions/0002-native-preparation-workspace.md) | Workspace and framework-neutral boundary scope |
 | [Testing plan](testing-plan.md) | Manual cases, local automated checks, coverage gaps, and future release gates |
 | [Testing runbook](testing-runbook.md) | Executable local/provider/deployed commands, safeguards, and troubleshooting |
 | [Project plan](project-plan.md) | Dependency-linked automation milestones and remaining product gates |
