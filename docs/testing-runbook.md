@@ -16,7 +16,7 @@ git status --short
 ```
 
 Use the Node version required by `package.json`. If dependencies are missing,
-stop the app and restore them with `npm ci`; do not run it after every edit.
+stop the app and restore them with `corepack pnpm install --frozen-lockfile`; do not run it after every edit.
 Keep `.env.local` intact and never paste its values into test reports.
 
 All commands below are local unless explicitly labeled **disposable
@@ -29,17 +29,17 @@ requires network access; normal fixture tests must not use hosted services.
 **PowerShell:**
 
 ```powershell
-npm run test:unit
-npm run test:db
-npm run test:browser
+corepack pcorepack pnpm test:unit
+corepack pcorepack pnpm test:db
+corepack pcorepack pnpm test:browser
 ```
 
 Use focused selectors while changing a feature:
 
 ```powershell
-npm test -- src\domain\dates.test.ts -t "validates real leap days"
-npm test -- tests\server\route-boundaries.test.ts
-npm run test:e2e -- --grep "a stale edit"
+corepack pnpm test -- src\domain\dates.test.ts -t "validates real leap days"
+corepack pnpm test -- tests\server\route-boundaries.test.ts
+corepack pcorepack pnpm test:e2e -- --grep "a stale edit"
 ```
 
 The local runner uses explicit fixture configuration instead of the developer's
@@ -54,7 +54,7 @@ locks or change the project's manual-preview configuration to hide collisions.
 ### Full local checkpoint
 
 ```powershell
-npm run test:local
+corepack pcorepack pnpm test:local
 ```
 
 This is the integrated local gate. It includes the appropriate type, lint,
@@ -64,8 +64,8 @@ stops the aggregate. There is no automatic cloud fallback.
 For targeted framework or design checks:
 
 ```powershell
-npm run test:built
-npm run test:quality
+corepack pcorepack pnpm test:built
+corepack pcorepack pnpm test:quality
 ```
 
 Built-app tests exercise a real production-mode Next server with a strict
@@ -77,7 +77,7 @@ provider/staging/deployment requirement.
 If work required stopping a manual preview, restore it afterward:
 
 ```powershell
-npm run dev -- --hostname localhost --port 3000
+corepack pnpm dev -- --hostname localhost --port 3000
 ```
 
 **Browser:** wait for Ready, open `http://localhost:3000`, and verify it responds.
@@ -111,8 +111,8 @@ needed. Bootstrap those prerequisites through a separate approved operation.
 supabase --version
 # Set this to the exact approved installed version reported above.
 $env:TIMELINE_SUPABASE_VERSION = "REPLACE_WITH_APPROVED_CLI_VERSION"
-node scripts\testing\provider.mjs check
-npm run test:integration
+node apps\web\scripts\testing\provider.mjs check
+corepack pcorepack pnpm test:integration
 ```
 
 If the CLI is not on PATH, set `TIMELINE_SUPABASE_CLI` to its actual executable
@@ -159,7 +159,7 @@ GitHub account, backend, synthetic user, or fixture project.
 ```powershell
 $env:TIMELINE_DEPLOYED_ORIGIN = "https://YOUR_APPROVED_DEPLOYMENT"
 $env:TIMELINE_APPROVED_ORIGIN = "https://YOUR_APPROVED_DEPLOYMENT"
-npm run test:deployed:public
+corepack pcorepack pnpm test:deployed:public
 ```
 
 Replace both placeholders with the same exact approved origin. Paths,
@@ -187,7 +187,7 @@ TIMELINE_SYNTHETIC_PROJECT_ID
 Then run:
 
 ```powershell
-npm run test:deployed:read
+corepack pcorepack pnpm test:deployed:read
 ```
 
 Do not type real passwords in shared shell history or use somebody's normal
@@ -238,7 +238,7 @@ not erase that gap.
 | Symptom | First action |
 | --- | --- |
 | Port/Next lock conflict | Identify the exact owned server; do not start a duplicate or kill unrelated processes |
-| `npm ci` permission/file-lock failure | Stop the server using its dependencies, then retry; do not immediately escalate to administrator |
+| `corepack pnpm install --frozen-lockfile` permission/file-lock failure | Stop the server using its dependencies, then retry; do not immediately escalate to administrator |
 | Account service unavailable | Check site HTTP, then session endpoint, then redacted configuration/provider diagnostics |
 | Successful resend but no email | Check confirmation/no-op status versus actual captured delivery; respect separate user cooldown and project quota |
 | Provider command blocked | Verify prerequisites on the separate suitable runner; do not fall back to hosted credentials |

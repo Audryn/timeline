@@ -1,24 +1,11 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Timeline workspace
 
-## This is NOT the Next.js you know
+Read [.github/copilot-instructions.md](.github/copilot-instructions.md) and
+[docs/README.md](docs/README.md) before making changes.
+The Next.js app and its framework-specific guidance are in
+[apps/web/AGENTS.md](apps/web/AGENTS.md). Shared client contracts and design
+tokens belong in `packages/shared`; server-only provider code does not.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
-
-# Timeline contributor entry point
-
-Read [project-wide instructions](.github/copilot-instructions.md) before changing
-the app. Apply the relevant files in [.github/instructions](.github/instructions)
-when working on UI, backend/data, or tests. These are repository instructions,
-not personal machine settings.
-
-Start with the [documentation index](docs/README.md) for product intent,
-architecture, and accepted decisions. [README.md](README.md) covers setup,
-commands, and the current implementation milestone.
-
-Keep the generated Next.js block above intact. Add curated guidance outside
-its markers. Do not copy session transcripts, credentials, personal identities,
-or machine-specific paths into these instructions.
+Run `corepack pnpm install --frozen-lockfile` and `corepack pnpm test:local`
+from this directory. The web runner also exercises shared-package tests.
+Never run test lanes concurrently in another checkout using ports 3100/3101.

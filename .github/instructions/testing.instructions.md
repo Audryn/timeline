@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/*.test.ts,src/**/*.test.tsx,tests/**/*.ts,vitest.config.ts,playwright.config.ts,.github/workflows/*.yml"
+applyTo: "apps/web/src/**/*.test.ts,apps/web/src/**/*.test.tsx,apps/web/tests/**/*.ts,apps/web/vitest.config.ts,apps/web/playwright.config.ts,.github/workflows/*.yml"
 ---
 
 # Tests and verification
@@ -8,13 +8,13 @@ applyTo: "src/**/*.test.ts,src/**/*.test.tsx,tests/**/*.ts,vitest.config.ts,play
   Extend existing tests; do not test constants or restate implementation.
 - Use synthetic people/projects and clearly fictional events. Never add real
   histories, emails, credentials, or hosted auth links to fixtures.
-- `npm test` runs Vitest: pure domain cases, fake-indexeddb draft tests, and
+- `corepack pnpm test` runs Vitest: pure domain cases, fake-indexeddb draft tests, and
   real PGlite PostgreSQL integration tests. No hosted project is needed for
   these existing tests; do not point fixtures at real account data.
-- `npm run test:e2e` runs Playwright with installed Microsoft Edge. It starts
+- `corepack pcorepack pnpm test:e2e` runs Playwright with installed Microsoft Edge. It starts
   its own Next dev server at `http://127.0.0.1:3100` with a matching origin.
   It uses fixed isolated Next output; leave server lifecycle to the runner and
-  do not reuse occupied test ports. Stop shared servers before `npm ci`.
+  do not reuse occupied test ports. Stop shared servers before `corepack pnpm install --frozen-lockfile`.
 - Browser API mocks prove client behavior, not hosted authentication or
   backend authorization. Use database role/RLS tests for those contracts and
   report hosted/email/device checks separately when needed.
@@ -44,10 +44,10 @@ applyTo: "src/**/*.test.ts,src/**/*.test.tsx,tests/**/*.ts,vitest.config.ts,play
   when modifying these paths.
 - Preserve private/no-store headers and origin-rejection checks. Do not treat
   unconfigured services as successful accounts or silently skip failure cases.
-- Use `npm run test:local` for the integrated local gate, including built-app
+- Use `corepack pcorepack pnpm test:local` for the integrated local gate, including built-app
   and quality checks. Use `test:unit`, `test:db`, `test:browser`, `test:built`,
   or `test:quality` with focused selectors while iterating; see the runbook.
-  `npm test` and `test:e2e` alone do not include all local gates.
+  `corepack pnpm test` and `test:e2e` alone do not include all local gates.
 - Keep the Windows CI workflow and commands aligned with `package.json`.
   Production builds need no third-party font download.
 - Playwright WebKit is not a substitute for real iPhone Safari/device testing.

@@ -57,7 +57,7 @@ For a new scoped instruction, create a `.instructions.md` file under
 
 ```markdown
 ---
-applyTo: "src/features/FEATURE/**/*.tsx"
+applyTo: "apps/web/src/features/FEATURE/**/*.tsx"
 ---
 
 # Feature guidance

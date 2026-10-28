@@ -1,12 +1,12 @@
 ---
-applyTo: "src/app/api/**/*.ts,src/lib/server.ts,src/lib/client.ts,src/lib/drafts.ts,src/features/events/form.ts,src/domain/**/*.ts,src/proxy.ts,supabase/**/*.sql"
+applyTo: "apps/web/src/app/api/**/*.ts,apps/web/src/lib/server.ts,apps/web/src/lib/client.ts,apps/web/src/lib/drafts.ts,apps/web/src/features/events/form.ts,apps/web/src/domain/**/*.ts,apps/web/src/proxy.ts,apps/web/supabase/**/*.sql"
 ---
 
 # Backend, domain, and persistence
 
 - Keep Supabase access behind same-origin server routes. No authenticated
   browser Supabase client or client-exposed account/service credentials.
-- Reuse `src/lib/server.ts`: verified identity, write-origin checks, bounded
+- Reuse `apps/web/src/lib/server.ts`: verified identity, write-origin checks, bounded
   JSON validation, private/no-store responses, and explicit errors.
 - Create request-scoped Supabase clients. Keep auth cookies HttpOnly,
   SameSite, and Secure in production; preserve refresh cookie/cache behavior.

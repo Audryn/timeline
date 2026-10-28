@@ -5,7 +5,9 @@
 Timeline captures personal life events and fictional character histories.
 The active approach is a Windows-developed, responsive **web-first** app:
 Next.js App Router, React, strict TypeScript, Supabase, and Dexie/IndexedDB.
-Use the supported Node version and scripts declared in `package.json`.
+Use the supported Node version and pnpm scripts declared in root `package.json`.
+The app is in `apps/web`; framework-neutral contracts/tokens are in
+`packages/shared`. See `docs/decisions/0002-native-preparation-workspace.md`.
 
 The app is **online-first with recoverable local drafts**, not an offline
 replica. Native iOS development and custom two-way offline sync were considered
@@ -66,7 +68,7 @@ product boundaries, `docs/architecture.md` for mechanisms, and
   Documentation-only edits need link/scope/consistency checks, not app builds.
 - Check for an existing server before launching another. Automated lanes use
   fixed isolated Next output/ports; do not attach to or kill an unrelated preview.
-  Stop servers using the dependencies before `npm ci` to avoid Windows locks.
+  Stop servers using the dependencies before `corepack pnpm install --frozen-lockfile` to avoid Windows locks.
   If work stops a running preview, restore it afterward and verify HTTP readiness.
 - Diagnose account setup failures in layers: app HTTP reachability,
   `/api/session`, redacted configuration checks, then hosted authentication,
@@ -76,7 +78,7 @@ product boundaries, `docs/architecture.md` for mechanisms, and
 - Do not overwrite an existing `.env.local` with `.env.example`. Never print
   its values. Supabase needs the base HTTP(S) project URL, not a copied
   environment assignment, dashboard URL, or database connection string.
-- Track source, migrations, tests, and the npm lockfile. Do not track builds,
+- Track source, migrations, tests, and `pnpm-lock.yaml`. Do not track builds,
   dependencies, credentials, browser data, or logs; preserve `.gitignore`.
 - On shared machines confirm the intended repository-local Git identity before
   committing. Do not infer it from the OS account or change global Git identity.

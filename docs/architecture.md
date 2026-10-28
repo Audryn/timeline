@@ -25,26 +25,26 @@ equivalent to an uploaded attachment.
 
 | Surface | Current location |
 | --- | --- |
-| Welcome, account, project pages | `src/app` |
-| Account forms | `src/features/account` |
-| Event editor and form/date conversion | `src/features/events` |
-| Project/people/timeline UI and filters | `src/features/timeline` |
-| Civil dates, schemas, query logic | `src/domain` |
-| Server auth/API helper | `src/lib/server.ts` |
-| Browser request helper | `src/lib/client.ts` |
-| IndexedDB draft schema/revision operations | `src/lib/drafts.ts` |
-| Account/project/event endpoints | `src/app/api` |
-| CSP, private headers, nonce propagation | `src/proxy.ts` |
-| Database schema/RLS/aggregate RPCs | `supabase/migrations` |
-| Unit/draft tests | Adjacent `src/**/*.test.ts` |
-| Real PostgreSQL contract tests | `tests/integration` |
-| Browser flows | `tests/e2e` |
+| Welcome, account, project pages | `apps/web/src/app` |
+| Account forms | `apps/web/src/features/account` |
+| Event editor and form/date conversion | `apps/web/src/features/events` |
+| Project/people/timeline UI and filters | `apps/web/src/features/timeline` |
+| Civil dates, schemas, query logic | `apps/web/src/domain` |
+| Server auth/API helper | `apps/web/src/lib/server.ts` |
+| Browser request helper | `apps/web/src/lib/client.ts` |
+| IndexedDB draft schema/revision operations | `apps/web/src/lib/drafts.ts` |
+| Account/project/event endpoints | `apps/web/src/app/api` |
+| CSP, private headers, nonce propagation | `apps/web/src/proxy.ts` |
+| Database schema/RLS/aggregate RPCs | `apps/web/supabase/migrations` |
+| Unit/draft tests | Adjacent `apps/web/src/**/*.test.ts` |
+| Real PostgreSQL contract tests | `apps/web/tests/integration` |
+| Browser flows | `apps/web/tests/e2e` |
 
 ## Boundaries to preserve
 
 ### Authentication and privacy
 
-`src/lib/server.ts` owns server client/session setup, verified identity,
+`apps/web/src/lib/server.ts` owns server client/session setup, verified identity,
 same-origin write checks, bounded schema-validated input, and safe errors.
 Production cookies are Secure/HttpOnly/SameSite; authenticated responses must
 not enter a shared cache. CSP nonces depend on dynamic root rendering.
@@ -66,12 +66,12 @@ without losing the browser draft or silently upserting missing records.
 
 ### Dates and filtering
 
-`src/domain/dates.ts` preserves civil components, precision, and approximate
+`apps/web/src/domain/dates.ts` preserves civil components, precision, and approximate
 wording independently of time zones. PostgreSQL's date helpers must agree,
 including strict JSON shape validation, leap days, and cross-year seasons.
 Custom dates may have placement bounds; ongoing ranges keep an open end.
 
-`src/domain/filters.ts` composes conjunctive groups into a single PostgREST
+`apps/web/src/domain/filters.ts` composes conjunctive groups into a single PostgREST
 logic parameter. Repeated scope-level OR parameters can discard conditions.
 Timeline refresh must retain filter intent while resetting pagination and
 reconciling canonical rows.
@@ -96,5 +96,5 @@ verification. Do not infer completed support from this architecture note.
 
 Use [product requirements](product.md) for agreed boundaries and
 [README.md](../README.md) for current setup/scripts. Toolchain versions and
-installed packages come from `package.json`/`package-lock.json`, not copied
+installed packages come from `package.json`/`pnpm-lock.yaml`, not copied
 version lists in design documents.

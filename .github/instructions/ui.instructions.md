@@ -1,5 +1,5 @@
 ---
-applyTo: "src/app/**/*.tsx,src/features/**/*.tsx,src/**/*.css"
+applyTo: "apps/web/src/app/**/*.tsx,apps/web/src/features/**/*.tsx,apps/web/src/**/*.css"
 ---
 
 # UI and capture workflows

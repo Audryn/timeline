@@ -2,6 +2,19 @@
 
 A Windows-developed, responsive web app for personal life timelines and fictional characters.
 
+## Workspace
+
+Run commands from this repository root using Node 24 and the pinned pnpm
+version (`corepack enable pnpm`). `apps/web` contains the Next.js app, its
+server adapters, migrations and test runners. `packages/shared` contains
+framework-neutral client contracts and design tokens. `docs` stays at root.
+Use `corepack pnpm install --frozen-lockfile` to restore dependencies.
+
+The private environment file belongs at `apps\web\.env.local`, not at root.
+Do not overwrite an existing file or rerun already deployed migrations.
+Local tests need no Supabase credentials. All shared-package tests are included
+in the web unit lane. Different checkouts must not run fixed-port tests at once.
+
 ## Project guidance
 
 Start with [AGENTS.md](AGENTS.md) and the
@@ -35,11 +48,11 @@ Open a fresh PowerShell window after installation, then:
 
 ```powershell
 # Run from your cloned or extracted timeline folder.
-npm ci
-if (!(Test-Path .env.local)) {
-    Copy-Item .env.example .env.local
+corepack pnpm install --frozen-lockfile
+if (!(Test-Path apps\web\.env.local)) {
+    Copy-Item apps\web\.env.example apps\web\.env.local
 }
-npm run dev
+corepack pnpm dev
 ```
 
 Open `http://localhost:3000`. The setup guide is also available at `http://localhost:3000/setup`.
@@ -47,7 +60,7 @@ Open `http://localhost:3000`. The setup guide is also available at `http://local
 ## Connect a Supabase development project
 
 1. Create a dedicated development project at `https://supabase.com/dashboard`. Do not use a production project containing other application data.
-2. In its SQL Editor, run the entire `supabase\migrations\202610200001_first_use.sql` migration once. Alternatively, use the Supabase CLI migration workflow. Future schema changes should also be migrations.
+2. In its SQL Editor, run the entire `apps\web\supabase\migrations\202610200001_first_use.sql` migration once. Alternatively, use the Supabase CLI migration workflow. Future schema changes should also be migrations.
 3. Set these values in the ignored `.env.local` file:
 
 ```dotenv
@@ -119,19 +132,19 @@ read-only deployment probes. See the [project plan](docs/project-plan.md) for
 remaining feature and infrastructure gates.
 
 ```powershell
-npm run test:local
+corepack pcorepack pnpm test:local
 ```
 
 The aggregate runs typecheck, lint, unit/components/routes, database contracts,
 Edge browser scenarios, production-built HTTP checks, and automated web-quality
-checks. See the runbook for focused lanes; `npm test` and `test:e2e` remain
+checks. See the runbook for focused lanes; `corepack pnpm test` and `test:e2e` remain
 compatible shortcuts but do not cover every gate.
 
 ## Source control
 
 Track application source, tests, SQL migrations, public assets, configuration,
-`.env.example`, and both `package.json` and `package-lock.json`. The lockfile
-is source-controlled so `npm ci` can reproduce the dependency versions.
+`.env.example`, and both `package.json` and `pnpm-lock.yaml`. The lockfile
+is source-controlled so `corepack pnpm install --frozen-lockfile` can reproduce the dependency versions.
 
 Do not track `node_modules`, `.next`, build/export folders, test output,
 coverage, logs, generated `next-env.d.ts`/`*.tsbuildinfo`, Supabase CLI local
@@ -157,7 +170,7 @@ The browser suite starts/stops its own server on port 3100 and uses installed
 Microsoft Edge. Its `.next-test-browser` output is separate from the manual
 preview; the built-app lane uses `.next-test-built` on port 3101. Do not start
 two lanes that share a test port/output or kill an unrelated process to reclaim
-one. Stop servers using shared dependencies before `npm ci`. No Supabase
+one. Stop servers using shared dependencies before `corepack pnpm install --frozen-lockfile`. No Supabase
 credentials are required for local database tests: PGlite runs PostgreSQL with
 isolated test auth roles. These tests do not replace real provider validation.
 
@@ -167,7 +180,7 @@ does not establish a hosted run. It does not deploy or provision cloud resources
 For a local production build:
 
 ```powershell
-npm run build
+corepack pnpm build
 npm start
 ```
 

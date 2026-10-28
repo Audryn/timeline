@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolve } from "node:path";
 
 const testMode = process.env.TIMELINE_TEST_MODE;
 if (testMode && testMode !== "browser" && testMode !== "built") {
@@ -7,6 +8,8 @@ if (testMode && testMode !== "browser" && testMode !== "built") {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  turbopack: { root: resolve(import.meta.dirname, "../..") },
+  outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   ...(testMode ? {
     distDir: testMode === "browser" ? ".next-test-browser" : ".next-test-built",
     typescript: { tsconfigPath: `scripts/testing/tsconfig.${testMode}.json` },

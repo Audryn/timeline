@@ -41,15 +41,15 @@ records on retry, and imprecise dates being silently changed.
 
 | Test surface | Existing coverage | Important limit |
 | --- | --- | --- |
-| [Civil date tests](../src/domain/dates.test.ts) | Leap days, date precision, seasons, invalid intervals, unknown/custom/ongoing dates | Does not exercise every form-control transition |
-| [Draft tests](../src/lib/drafts.test.ts) | Incomplete-draft persistence, stale revision writes/deletes, owner-scoped cleanup | Uses fake IndexedDB, not actual browser quota failures |
-| [Server route tests](../tests/server/route-boundaries.test.ts) | Actual handlers/helper validation, Origin/auth/provider error and cookie-intent boundaries | Typed provider/request-cookie stubs; not actual Supabase or Next network context |
-| [Database contract tests](../tests/integration/first-use.test.ts) | Atomic project/category/person setup, idempotency, RLS/grants, cross-owner/project rejection, links/versions, SQL/TypeScript date parity | Real PostgreSQL via PGlite, with test auth roles; not hosted Supabase Auth or its Data API |
-| [Filter serialization tests](../tests/integration/filters.test.ts) | One combined logic tree; search/date/Undated groups and escaped literals | Captures SDK request URLs; does not execute them through PostgREST against matching records |
-| [Browser first-use suite](../tests/e2e/first-use.spec.ts) | Setup guidance, first event, draft recovery, narrow screens, uncertain-save retry, conflicts/filter retention, cross-tab sign-out; expanded fault cases alongside it | Most account/project/event responses are mocked; not proof of real signup, email, cookies, or hosted saves |
-| [Built-app tests](../tests/built/framework.spec.ts) | Actual production-mode Next HTTP, per-request nonces, hydration, protected cookie flags and request-local reads | Loopback provider fixture; explicit HTTP cookie replay is not proof of browser Secure-cookie delivery |
-| [Provider workflow](../tests/provider/real-provider.spec.ts) | Real signup/reset/captured mail, canonical events, filter membership, isolation and direct-write denial | Requires separate Docker/Supabase runner; not verified merely because the spec exists |
-| [Deployed policy tests](../tests/integration/deployed-policy.test.ts) | Exact HTTPS approval, synthetic-read restrictions, email/mutation denial and request limits | No-network guard checks; do not establish that any production deployment exists or passes |
+| [Civil date tests](../apps/web/src/domain/dates.test.ts) | Leap days, date precision, seasons, invalid intervals, unknown/custom/ongoing dates | Does not exercise every form-control transition |
+| [Draft tests](../apps/web/src/lib/drafts.test.ts) | Incomplete-draft persistence, stale revision writes/deletes, owner-scoped cleanup | Uses fake IndexedDB, not actual browser quota failures |
+| [Server route tests](../apps/web/tests/server/route-boundaries.test.ts) | Actual handlers/helper validation, Origin/auth/provider error and cookie-intent boundaries | Typed provider/request-cookie stubs; not actual Supabase or Next network context |
+| [Database contract tests](../apps/web/tests/integration/first-use.test.ts) | Atomic project/category/person setup, idempotency, RLS/grants, cross-owner/project rejection, links/versions, SQL/TypeScript date parity | Real PostgreSQL via PGlite, with test auth roles; not hosted Supabase Auth or its Data API |
+| [Filter serialization tests](../apps/web/tests/integration/filters.test.ts) | One combined logic tree; search/date/Undated groups and escaped literals | Captures SDK request URLs; does not execute them through PostgREST against matching records |
+| [Browser first-use suite](../apps/web/tests/e2e/first-use.spec.ts) | Setup guidance, first event, draft recovery, narrow screens, uncertain-save retry, conflicts/filter retention, cross-tab sign-out; expanded fault cases alongside it | Most account/project/event responses are mocked; not proof of real signup, email, cookies, or hosted saves |
+| [Built-app tests](../apps/web/tests/built/framework.spec.ts) | Actual production-mode Next HTTP, per-request nonces, hydration, protected cookie flags and request-local reads | Loopback provider fixture; explicit HTTP cookie replay is not proof of browser Secure-cookie delivery |
+| [Provider workflow](../apps/web/tests/provider/real-provider.spec.ts) | Real signup/reset/captured mail, canonical events, filter membership, isolation and direct-write denial | Requires separate Docker/Supabase runner; not verified merely because the spec exists |
+| [Deployed policy tests](../apps/web/tests/integration/deployed-policy.test.ts) | Exact HTTPS approval, synthetic-read restrictions, email/mutation denial and request limits | No-network guard checks; do not establish that any production deployment exists or passes |
 
 The original unconfigured-signup check remains conditional in its test body,
 but the isolated local runner explicitly supplies unconfigured provider values.
@@ -59,7 +59,7 @@ cross-browser coverage; the quality lane and later browser work are separate.
 
 No current test result should be inferred from this inventory. Historical
 passing runs do not establish that a later checkout/environment still passes.
-Use `npm run test:local` for the integrated credential-free automation gate.
+Use `corepack pcorepack pnpm test:local` for the integrated credential-free automation gate.
 The [project plan](project-plan.md) separates remaining product capabilities
 from automation and external-runner prerequisites.
 
@@ -114,12 +114,12 @@ node --version
 npm --version
 git rev-parse --short HEAD
 git status --short
-npm run dev -- --hostname localhost --port 3000
+corepack pnpm dev -- --hostname localhost --port 3000
 ```
 
 First check whether a project server is already running. Reuse a healthy
 preview instead of launching another. If dependencies are absent, stop the
-server and use `npm ci`; it is not needed for every testing session.
+server and use `corepack pnpm install --frozen-lockfile`; it is not needed for every testing session.
 Leave the server window open and wait for Ready.
 
 **Browser:** open `http://localhost:3000`. Follow [README setup](../README.md#connect-a-supabase-development-project)
@@ -151,10 +151,10 @@ git clone --no-hardlinks $source $scratch
 # Continue only if cloning succeeded.
 Set-Location -LiteralPath $scratch
 git rev-parse --short HEAD
-npm ci
+corepack pnpm install --frozen-lockfile
 # Continue only if dependency installation succeeded.
 $env:APP_ORIGIN = "http://localhost:3200"
-npm run dev -- --hostname localhost --port 3200
+corepack pnpm dev -- --hostname localhost --port 3200
 ```
 
 **Browser:** use `http://localhost:3200/api/session` and confirm
@@ -360,14 +360,14 @@ No new tooling or package installation is requested by this document.
 For an integrated first-use change:
 
 ```powershell
-npm run test:local
+corepack pcorepack pnpm test:local
 ```
 
 This runs typecheck, lint, unit/component/route tests, SQL/contracts, browser
 scenarios, built-app HTTP tests, and web-quality checks, stopping on failure.
 For focused iteration, use `test:unit`, `test:db`, `test:browser`, `test:built`,
 or `test:quality` as described in the [runbook](testing-runbook.md).
-The compatibility `npm test` and `test:e2e` commands remain available, but alone
+The compatibility `corepack pnpm test` and `test:e2e` commands remain available, but alone
 do not include the built-app and quality gates.
 
 The browser suite starts/stops its own server on
@@ -379,13 +379,13 @@ Focused examples:
 
 ```powershell
 # One date test by name.
-npm test -- src\domain\dates.test.ts -t "validates real leap days"
+corepack pnpm test -- src\domain\dates.test.ts -t "validates real leap days"
 
 # Related data/draft regressions in one runner.
-npm test -- src\lib\drafts.test.ts tests\integration\first-use.test.ts tests\integration\filters.test.ts
+corepack pnpm test -- src\lib\drafts.test.ts tests\integration\first-use.test.ts tests\integration\filters.test.ts
 
 # One browser scenario; this also starts its own test server.
-npm run test:e2e -- tests\e2e\first-use.spec.ts --grep "a stale edit"
+corepack pcorepack pnpm test:e2e -- tests\e2e\first-use.spec.ts --grep "a stale edit"
 ```
 
 Use the smallest relevant selectors while changing code. Broaden to affected
@@ -395,11 +395,11 @@ changes need links/consistency checks, not runtime suites.
 After testing, if a preview was stopped, restore and verify it:
 
 ```powershell
-npm run dev -- --hostname localhost --port 3000
+corepack pnpm dev -- --hostname localhost --port 3000
 ```
 
 Wait for Ready. **Browser:** open `http://localhost:3000` and confirm the page
-responds. `npm ci` replaces dependencies; it is not required after each edit
+responds. `corepack pnpm install --frozen-lockfile` replaces dependencies; it is not required after each edit
 and must not run while their files are locked by the server.
 
 ### CI in plain language
