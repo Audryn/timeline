@@ -110,13 +110,22 @@ The migration enables RLS, grants authenticated read access, and restricts aggre
 
 ## Verification
 
+Use the [testing plan](docs/testing-plan.md) for the manual smoke test,
+scenario IDs, safe test data, focused commands, and release criteria.
+It distinguishes local automation from real Supabase/email and device checks.
+The [automated testing runbook](docs/testing-runbook.md) explains isolated
+local lanes, disposable captured-email integration, and explicitly approved
+read-only deployment probes. See the [project plan](docs/project-plan.md) for
+remaining feature and infrastructure gates.
+
 ```powershell
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npm run test:e2e
+npm run test:local
 ```
+
+The aggregate runs typecheck, lint, unit/components/routes, database contracts,
+Edge browser scenarios, production-built HTTP checks, and automated web-quality
+checks. See the runbook for focused lanes; `npm test` and `test:e2e` remain
+compatible shortcuts but do not cover every gate.
 
 ## Source control
 
@@ -144,9 +153,16 @@ off-device backup until it is copied or pushed to an appropriate remote.
 
 ## Running the browser suite and production build
 
-Stop any running `npm run dev` process before `npm run test:e2e`; Next.js allows only one development server per project. The browser suite starts/stops its own server on port 3100 and uses installed Microsoft Edge. Install Edge or adjust Playwright's browser setup on other platforms. No Supabase credentials are required for database tests: PGlite runs PostgreSQL locally with isolated test auth roles. These tests are not a substitute for hosted Supabase validation.
+The browser suite starts/stops its own server on port 3100 and uses installed
+Microsoft Edge. Its `.next-test-browser` output is separate from the manual
+preview; the built-app lane uses `.next-test-built` on port 3101. Do not start
+two lanes that share a test port/output or kill an unrelated process to reclaim
+one. Stop servers using shared dependencies before `npm ci`. No Supabase
+credentials are required for local database tests: PGlite runs PostgreSQL with
+isolated test auth roles. These tests do not replace real provider validation.
 
-The GitHub Actions workflow runs these checks on Windows. It does not deploy or provision cloud resources.
+The GitHub Actions workflow is configured for Windows checks; its existence
+does not establish a hosted run. It does not deploy or provision cloud resources.
 
 For a local production build:
 

@@ -14,9 +14,12 @@
 /coverage
 /playwright-report/
 /test-results/
+/playwright/.auth/
 
 # next.js
 /.next/
+/.next-test-browser/
+/.next-test-built/
 /out/
 
 # production

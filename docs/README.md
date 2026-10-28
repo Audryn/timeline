@@ -14,6 +14,9 @@ It is a starting point for ongoing curation, not a frozen transcript.
 | [README.md](../README.md) | Setup, commands, implementation milestone, and operational caveats |
 | [Product brief](product.md) | Intended experience, vocabulary, scope, and constraints |
 | [Architecture](architecture.md) | Current mechanisms, code map, and design invariants |
+| [Testing plan](testing-plan.md) | Manual cases, local automated checks, coverage gaps, and future release gates |
+| [Testing runbook](testing-runbook.md) | Executable local/provider/deployed commands, safeguards, and troubleshooting |
+| [Project plan](project-plan.md) | Dependency-linked automation milestones and remaining product gates |
 | [Accepted web-first decision](decisions/0001-web-first-online-first.md) | Why the active approach differs from the original native plan |
 | [Decision template](decisions/TEMPLATE.md) | Structure for proposing and recording later choices |
 

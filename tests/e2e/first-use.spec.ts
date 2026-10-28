@@ -1,14 +1,5 @@
-import { expect, test } from "@playwright/test";
-
-const owner = "10000000-0000-4000-8000-000000000001";
-const project = "20000000-0000-4000-8000-000000000001";
-const person = "30000000-0000-4000-8000-000000000001";
-const category = "40000000-0000-4000-8000-000000000001";
-const detail = {
-  project: { id: project, name: "My life", hemisphere: "northern" },
-  people: [{ id: person, project_id: project, name: "Alex", kind: "real" }],
-  categories: [{ id: category, project_id: project, name: "Education", color: "#216353" }],
-};
+import { expect, test } from "./fixtures/test";
+import { category, detail, owner, person, project } from "./fixtures/workspace";
 
 test("unconfigured accounts are honestly blocked, with readable setup steps", async ({ page }) => {
   await page.route("**/api/session", (route) => route.fulfill({ json: { configured: false, user: null } }));
@@ -22,7 +13,7 @@ test("unconfigured accounts are honestly blocked, with readable setup steps", as
   await expect(page.getByRole("button", { name: /create.*account/i })).toBeDisabled();
 });
 
-test("real API rejects foreign origins and does not invent an account when unconfigured", async ({ request }) => {
+test("real API rejects foreign origins and does not invent an account when unconfigured", async ({ request, baseURL }) => {
   const csrf = await request.post("/api/auth/signup", {
     headers: { Origin: "https://not-timeline.example" },
     data: { email: "test@example.com", password: "long-enough-password" },
@@ -32,14 +23,13 @@ test("real API rejects foreign origins and does not invent an account when uncon
   expect(session.headers()["cache-control"]).toContain("no-store");
   expect(session.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
   const result = await session.json();
-  if (!result.configured) {
-    const signup = await request.post("/api/auth/signup", {
-      headers: { Origin: "http://127.0.0.1:3100" },
-      data: { email: "test@example.com", password: "long-enough-password" },
-    });
-    expect(signup.status()).toBe(503);
-    expect(await signup.json()).toHaveProperty("error");
-  }
+  expect(result).toEqual({ configured: false, user: null });
+  const signup = await request.post("/api/auth/signup", {
+    headers: { Origin: new URL(baseURL!).origin },
+    data: { email: "test@example.com", password: "long-enough-password" },
+  });
+  expect(signup.status()).toBe(503);
+  expect(await signup.json()).toHaveProperty("error");
 });
 
 test("first-use project and season event are saved only after acknowledgment", async ({ page }) => {

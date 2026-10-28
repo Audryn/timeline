@@ -13,10 +13,26 @@ applyTo: "src/**/*.test.ts,src/**/*.test.tsx,tests/**/*.ts,vitest.config.ts,play
   these existing tests; do not point fixtures at real account data.
 - `npm run test:e2e` runs Playwright with installed Microsoft Edge. It starts
   its own Next dev server at `http://127.0.0.1:3100` with a matching origin.
-  Stop any other project dev server first; leave server lifecycle to the runner.
+  It uses fixed isolated Next output; leave server lifecycle to the runner and
+  do not reuse occupied test ports. Stop shared servers before `npm ci`.
 - Browser API mocks prove client behavior, not hosted authentication or
   backend authorization. Use database role/RLS tests for those contracts and
   report hosted/email/device checks separately when needed.
+- Follow `docs/testing-runbook.md` for lane commands. Local routes must execute
+  actual handlers/helpers while replacing only request-cookie and external
+  provider boundaries. Keep Node/PGlite tests separate from DOM component tests.
+- Local test processes use explicit fixture environment and network boundaries;
+  inherited `.env.local` must never turn a mocked test into real mail or writes.
+  An unhandled mock is a failure, not a successful empty response.
+- Production probes use a separate config/command, exact approved HTTPS target,
+  pinned synthetic identity and request allowlist. No signup/reset/resend,
+  journal mutations, migrations, deletes or fault/load testing in production.
+  Email callback GETs consume tokens; they are not harmless read probes.
+- Keep screenshots/traces/auth state/mail captures out of deployed reports and
+  Git. Synthetic accounts do not make session tokens safe to publish.
+- Real provider checks must run before release after auth/SDK/SQL/query contract
+  changes; missing infrastructure is Blocked, not Pass. Mailpit capture proves
+  local email content/flow, not Internet SMTP deliverability.
 - Target selectors by role/label. Next's route announcer can also have
   `role=alert`; select the intended error, not every alert on the page.
 - Await actual visible states, acknowledged requests, and lock release.
@@ -28,9 +44,10 @@ applyTo: "src/**/*.test.ts,src/**/*.test.tsx,tests/**/*.ts,vitest.config.ts,play
   when modifying these paths.
 - Preserve private/no-store headers and origin-rejection checks. Do not treat
   unconfigured services as successful accounts or silently skip failure cases.
-- Available commands: `npm run typecheck`, `npm run lint`, `npm test`,
-  `npm run build`, `npm run test:e2e`. Use focused selectors for iteration and
-  the relevant broader checks before finalizing integrated changes.
+- Use `npm run test:local` for the integrated local gate, including built-app
+  and quality checks. Use `test:unit`, `test:db`, `test:browser`, `test:built`,
+  or `test:quality` with focused selectors while iterating; see the runbook.
+  `npm test` and `test:e2e` alone do not include all local gates.
 - Keep the Windows CI workflow and commands aligned with `package.json`.
   Production builds need no third-party font download.
 - Playwright WebKit is not a substitute for real iPhone Safari/device testing.

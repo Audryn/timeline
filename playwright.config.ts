@@ -1,12 +1,23 @@
 import { defineConfig } from "@playwright/test";
+import { localEnvironment, localOrigins } from "./scripts/testing/environment.mjs";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  use: { baseURL: "http://127.0.0.1:3100", browserName: "chromium", channel: "msedge" },
+  outputDir: "./test-results/browser",
+  reporter: [["list"], ["html", { outputFolder: "playwright-report/browser", open: "never" }]],
+  use: {
+    baseURL: localOrigins.browser,
+    browserName: "chromium",
+    channel: "msedge",
+    serviceWorkers: "block",
+    timezoneId: "UTC",
+    trace: "retain-on-failure",
+  },
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
-    url: "http://127.0.0.1:3100",
+    command: "node scripts/testing/serve.mjs browser",
+    url: `${localOrigins.browser}/api/session`,
     reuseExistingServer: false,
-    env: { APP_ORIGIN: "http://127.0.0.1:3100" },
+    timeout: 120_000,
+    env: localEnvironment({ lane: "browser" }),
   },
 });

@@ -29,6 +29,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
   const alive = useRef(true);
   const identity = useRef(initial);
   const snapshot = useRef(initial.form);
+  const titleInput = useRef<HTMLInputElement>(null);
 
   const persist = useCallback((snapshot: EventForm, attempt: EventInput | null) => {
     const task = queue.current.then(async () => {
@@ -73,6 +74,9 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
       void queue.current.then(() => release?.());
     };
   }, [initial.owner]);
+  useEffect(() => {
+    if (leased) titleInput.current?.focus();
+  }, [leased]);
   useEffect(() => {
     timer.current = setTimeout(() => {
       void persist(form, identity.current.pending).catch((problem) => {
@@ -158,7 +162,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
       <button className={styles.secondary} onClick={() => { change("version", current.version); setCurrent(null); }}>Keep my draft and use this base version</button></aside>}
     <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
       <fieldset disabled={saving || Boolean(pending) || !leased} className={styles.formFields}>
-        <label>What happened? <span className={styles.hint}>(required)</span><input autoFocus maxLength={200} value={form.title} onChange={(event) => change("title", event.target.value)} /></label>
+        <label>What happened? <span className={styles.hint}>(required)</span><input ref={titleInput} maxLength={200} value={form.title} onChange={(event) => change("title", event.target.value)} /></label>
         <fieldset className={styles.choices}><legend>Who was involved? (choose at least one)</legend>{people.map((person) =>
           <label className={styles.check} key={person.id}><input type="checkbox" checked={form.personIds.includes(person.id)} onChange={() => toggle("personIds", person.id)} />{person.name}{person.kind === "fictional" ? " (character)" : ""}</label>)}</fieldset>
         <fieldset className={styles.choices}><legend>Categories (optional)</legend>{categories.map((category) =>

@@ -15,5 +15,15 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run build
-      - run: npm run test:e2e
+      - run: npm run test:browser
+      - run: npm run test:built
+      # Pixel baselines require the reviewed OS/Edge version; hosted runners drift.
+      - run: npm run test:quality -- --grep-invert "visual baseline"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: local-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

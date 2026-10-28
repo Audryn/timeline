@@ -17,7 +17,13 @@ export class DraftDatabase extends Dexie {
   }
 }
 let instance: DraftDatabase | undefined;
-export function drafts() { return instance ??= new DraftDatabase(); }
+export function drafts() {
+  if (!instance || instance.hasFailed()) {
+    instance?.close();
+    instance = new DraftDatabase();
+  }
+  return instance;
+}
 export async function saveDraft(db: DraftDatabase, value: Draft, expectedRevision: number) {
   return db.transaction("rw", db.drafts, async () => {
     const current = await db.drafts.get(value.key);

@@ -60,11 +60,14 @@ product boundaries, `docs/architecture.md` for mechanisms, and
 
 - Use the smallest relevant tests, then typecheck/lint/build where affected.
   Follow `.github/instructions/testing.instructions.md` for runner details.
+  Use `docs/testing-runbook.md` for lane commands and `docs/project-plan.md`
+  for gates. Keep local fixtures free of real provider credentials/email;
+  actual provider and read-only deployment checks require their explicit lanes.
   Documentation-only edits need link/scope/consistency checks, not app builds.
-- Check for an existing project dev server before launching another. Stop it
-  before `npm ci` or the browser suite: Windows dependency files can be locked,
-  and Next permits one dev server per project. If work stops a running preview,
-  restore it afterward and verify its HTTP response before handing back the URL.
+- Check for an existing server before launching another. Automated lanes use
+  fixed isolated Next output/ports; do not attach to or kill an unrelated preview.
+  Stop servers using the dependencies before `npm ci` to avoid Windows locks.
+  If work stops a running preview, restore it afterward and verify HTTP readiness.
 - Diagnose account setup failures in layers: app HTTP reachability,
   `/api/session`, redacted configuration checks, then hosted authentication,
   callback/email, or migration checks as appropriate. Report the failing layer

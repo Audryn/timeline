@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
-import { afterEach, describe, expect, it } from "vitest";
-import { DraftDatabase, DraftConflict, removeDraft, saveDraft, type Draft } from "./drafts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { drafts, DraftDatabase, DraftConflict, removeDraft, saveDraft, type Draft } from "./drafts";
 import { emptyDate } from "@/features/events/form";
 
 const databases: DraftDatabase[] = [];
@@ -33,5 +33,19 @@ describe("recoverable browser drafts", () => {
     await db.drafts.where("owner").equals(one.owner).delete();
     expect(await db.drafts.where("owner").equals(one.owner).count()).toBe(0);
     expect(await db.drafts.where("owner").equals(two.owner).count()).toBe(1);
+  });
+  it("allows explicit recovery after a cached database-open failure", async () => {
+    const open = vi.spyOn(IDBFactory.prototype, "open").mockImplementation(() => {
+      throw new DOMException("Synthetic database open failure", "InvalidStateError");
+    });
+    const failed = drafts();
+    try {
+      await expect(failed.drafts.get("synthetic-key")).rejects.toBeDefined();
+      expect(failed.hasFailed()).toBe(true);
+    } finally { open.mockRestore(); }
+    const recovered = drafts();
+    databases.push(recovered);
+    expect(recovered).not.toBe(failed);
+    expect(await recovered.drafts.get("synthetic-key")).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
-.workspace { max-width: 1160px; padding: 42px 24px 70px; margin: auto; }
+.workspace { max-width: 1160px; padding: 42px 24px 70px; margin: auto; overflow-wrap: anywhere; }
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+.heading > div { min-width: 0; max-width: 100%; }
 .heading h1 { margin: 4px 0; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.05em; line-height: 1.12; }
 .eyebrow { margin: 0; color: #216353; text-transform: uppercase; letter-spacing: .14em; font-weight: 750; font-size: .7rem; }
 .account { display: flex; align-items: center; flex-wrap: wrap; gap: 15px; color: #617069; font-size: .85rem; }
@@ -35,7 +36,7 @@
 .civil { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
 .conflict { border: 1px solid #d9b55d; background: #fffbef; border-radius: 9px; padding: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .people { background: #eeeee4; padding: 15px 18px; border-radius: 10px; margin-bottom: 20px; font-size: .85rem; }
-.pill { display: inline-block; padding: 4px 10px; background: #e6f0e9; color: #216353; border: 1px solid #c8dacb; border-radius: 20px; font-size: .75rem; line-height: 1.5; }
+.pill { display: inline-block; max-width: 100%; padding: 4px 10px; background: #e6f0e9; color: #216353; border: 1px solid #c8dacb; border-radius: 20px; font-size: .75rem; line-height: 1.5; }
 .personForm { max-width: 450px; padding-top: 10px; }
 .filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; padding: 20px; background: #fff; border: 1px solid #dbe3d9; border-radius: 12px; }
 .filters .hint { grid-column: 1 / -1; margin: 0; }
