@@ -21,6 +21,8 @@
     "api:generate": "pnpm --filter @timeline/web api:generate",
     "api:spec:check": "pnpm --filter @timeline/web api:spec:check",
     "api:check": "pnpm --filter @timeline/web api:check",
+    "tokens:generate": "pnpm --filter @timeline/web tokens:generate",
+    "tokens:check": "pnpm --filter @timeline/web tokens:check",
     "test:integration": "pnpm --filter @timeline/web test:integration",
     "test:deployed:public": "pnpm --filter @timeline/web test:deployed:public",
     "test:deployed:read": "pnpm --filter @timeline/web test:deployed:read"

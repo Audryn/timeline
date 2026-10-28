@@ -16,6 +16,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm api:spec:check
+      - run: pnpm tokens:check
       - run: pnpm test
       - run: pnpm test:browser
       - run: pnpm test:built

@@ -3,11 +3,11 @@
   z-index: 10;
   top: 12px;
   left: 16px;
-  padding: 12px 20px;
+  padding: var(--compatibility-spacing-12) var(--compatibility-spacing-20);
   transform: translateY(-160%);
-  border-radius: 8px;
+  border-radius: var(--radii-control);
   background: var(--green);
-  color: white;
+  color: var(--color-neutral-white);
 }
 
 .skipLink:focus {
@@ -20,18 +20,18 @@
   max-width: 1248px;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--spacing-6);
   margin: 0 auto;
-  padding: 20px 44px;
+  padding: var(--compatibility-spacing-20) var(--compatibility-spacing-44);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   color: var(--ink);
-  font-size: 27px;
-  font-weight: 700;
-  letter-spacing: -1.2px;
+  font-size: var(--compatibility-font-size-px27);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--compatibility-letter-spacing-brand);
   text-decoration: none;
 }
 
@@ -46,8 +46,8 @@
   height: 31px;
   justify-items: center;
   align-content: space-between;
-  margin-right: 12px;
-  padding: 2px 0;
+  margin-right: var(--compatibility-spacing-12);
+  padding: var(--compatibility-spacing-2) 0;
 }
 
 .brandMark::before {
@@ -56,7 +56,7 @@
   bottom: 4px;
   left: 11px;
   width: 1px;
-  background: #96b3a0;
+  background: var(--color-compatibility-brand-rail);
   content: "";
 }
 
@@ -65,20 +65,20 @@
   width: 7px;
   height: 7px;
   border: 1px solid var(--paper);
-  border-radius: 50%;
+  border-radius: var(--radii-circle);
   background: var(--green);
 }
 
 .brandMark span:nth-child(2) {
-  background: #9aaf87;
+  background: var(--color-compatibility-brand-dot);
 }
 
 .navigation {
   display: flex;
   align-items: center;
-  gap: 28px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: var(--compatibility-spacing-28);
+  font-size: var(--compatibility-font-size-px13);
+  font-weight: var(--font-weight-semibold);
 }
 
 .navigation a {
@@ -90,13 +90,13 @@
 }
 
 .workspaceLink span {
-  margin-left: 5px;
+  margin-left: var(--compatibility-spacing-5);
 }
 
 .headerSignIn {
-  padding: 8px 19px;
-  border: 1px solid #cbd4c7;
-  border-radius: 7px;
+  padding: var(--spacing-2) var(--compatibility-spacing-19);
+  border: 1px solid var(--color-compatibility-header-border);
+  border-radius: var(--compatibility-radii-7);
 }
 
 .navigation a:hover {
@@ -105,62 +105,62 @@
 }
 
 .mainContent {
-  outline-offset: -4px;
+  outline-offset: var(--compatibility-spacing-negative4);
 }
 
 .welcome {
   max-width: 1248px;
   margin: 0 auto;
-  padding: 0 44px 28px;
+  padding: 0 var(--compatibility-spacing-44) var(--compatibility-spacing-28);
 }
 
 .hero {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   align-items: center;
-  gap: clamp(40px, 7vw, 100px);
-  padding: 60px 0 76px;
+  gap: var(--compatibility-spacing-hero-gap);
+  padding: var(--compatibility-spacing-60) 0 var(--compatibility-spacing-76);
 }
 
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-bottom: 22px;
+  gap: var(--compatibility-spacing-9);
+  margin-bottom: var(--compatibility-spacing-22);
   color: var(--green);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.8px;
+  font-size: var(--compatibility-font-size-px11);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--compatibility-letter-spacing-eyebrow);
   text-transform: uppercase;
 }
 
 .eyebrow > span {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radii-circle);
   background: var(--green);
 }
 
 .heroCopy h1 {
-  margin-bottom: 25px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(58px, 6.5vw, 85px);
-  font-weight: 400;
-  line-height: 1.04;
-  letter-spacing: -3.8px;
+  margin-bottom: var(--compatibility-spacing-25);
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-hero);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--compatibility-line-height-hero);
+  letter-spacing: var(--compatibility-letter-spacing-hero);
 }
 
 .heroCopy h1 em {
   color: var(--green);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
 }
 
 .heroDescription {
   max-width: 375px;
-  margin-bottom: 30px;
+  margin-bottom: var(--compatibility-spacing-30);
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.8;
+  font-size: var(--compatibility-font-size-px17);
+  line-height: var(--compatibility-line-height-relaxed);
 }
 
 .primaryButton {
@@ -168,44 +168,44 @@
   min-height: 51px;
   align-items: center;
   justify-content: center;
-  gap: 35px;
-  padding: 12px 22px;
+  gap: var(--compatibility-spacing-35);
+  padding: var(--compatibility-spacing-12) var(--compatibility-spacing-22);
   border: 1px solid var(--green);
-  border-radius: 8px;
+  border-radius: var(--radii-control);
   background: var(--green);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--color-neutral-white);
+  font-size: var(--type-scale-small);
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
   transition: background 160ms ease;
 }
 
 .primaryButton:hover {
-  background: #184d40;
+  background: var(--color-brand-hover);
 }
 
 .primaryButton span {
-  font-size: 21px;
-  line-height: 1;
+  font-size: var(--compatibility-font-size-px21);
+  line-height: var(--line-height-single);
 }
 
 .heroActions p {
-  margin: 15px 0 25px;
+  margin: var(--compatibility-spacing-15) 0 var(--compatibility-spacing-25);
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--compatibility-font-size-px13);
 }
 
 .heroActions p a {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .privacyNote {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
   margin-bottom: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-scale-caption);
 }
 
 .privacyNote svg {
@@ -215,48 +215,48 @@
 
 .storyPaper {
   position: relative;
-  padding: 27px 33px 22px;
-  border: 1px solid #d8decf;
-  border-radius: 16px;
+  padding: var(--compatibility-spacing-27) var(--compatibility-spacing-33) var(--compatibility-spacing-22);
+  border: 1px solid var(--color-compatibility-paper-border);
+  border-radius: var(--radii-card);
   background: var(--surface);
-  box-shadow: 0 16px 45px #34482f06, 7px 8px 0 -1px #e9ecdf;
+  box-shadow: var(--shadows-story);
 }
 
 .paperHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 23px;
+  gap: var(--spacing-2);
+  margin-bottom: var(--compatibility-spacing-23);
 }
 
 .paperOverline {
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1.6px;
+  font-size: var(--compatibility-font-size-px9);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--compatibility-letter-spacing-overline);
   text-transform: uppercase;
 }
 
 .paperStar {
-  color: #8d996e;
-  font-size: 32px;
-  line-height: 1;
+  color: var(--color-compatibility-paper-star);
+  font-size: var(--type-scale-title);
+  line-height: var(--line-height-single);
 }
 
 .storyPaper h2 {
-  margin-bottom: 26px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 30px;
-  font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: -0.8px;
+  margin-bottom: var(--compatibility-spacing-26);
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-px30);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--compatibility-line-height-story);
+  letter-spacing: var(--compatibility-letter-spacing-story);
 }
 
 .storyRail {
   position: relative;
   display: grid;
-  gap: 22px;
+  gap: var(--compatibility-spacing-22);
 }
 
 .storyRail::before {
@@ -265,7 +265,7 @@
   bottom: 30px;
   left: 13px;
   width: 1px;
-  background: #d4dfcc;
+  background: var(--color-compatibility-story-rail);
   content: "";
 }
 
@@ -273,7 +273,7 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 17px;
+  gap: var(--compatibility-spacing-17);
 }
 
 .promptNumber {
@@ -282,110 +282,110 @@
   height: 28px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid #d3decb;
-  border-radius: 50%;
-  background: #eff3e9;
+  border: 1px solid var(--color-compatibility-prompt-border);
+  border-radius: var(--radii-circle);
+  background: var(--color-compatibility-prompt-surface);
   color: var(--green);
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--compatibility-font-size-px9);
+  font-weight: var(--font-weight-bold);
 }
 
 .promptLabel {
-  margin: 1px 0 4px;
+  margin: var(--compatibility-spacing-1) 0 var(--spacing-1);
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
+  font-size: var(--compatibility-font-size-px9);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--compatibility-letter-spacing-prompt);
   text-transform: uppercase;
 }
 
 .storyPrompt h3 {
-  margin-bottom: 5px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
+  margin-bottom: var(--compatibility-spacing-5);
+  font-size: var(--type-scale-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--compatibility-line-height-compact);
 }
 
 .storyPrompt div > p:last-child {
   max-width: 260px;
   margin-bottom: 0;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--type-scale-caption);
+  line-height: var(--compatibility-line-height-prose);
 }
 
 .paperFootnote {
-  margin: 25px 0 0;
-  padding-top: 16px;
-  border-top: 1px solid #e4e7dc;
+  margin: var(--compatibility-spacing-25) 0 0;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-compatibility-footnote-border);
   color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 14px;
+  font-family: var(--font-family-serif);
+  font-size: var(--type-scale-small);
   font-style: italic;
   text-align: center;
 }
 
 .waysToBegin {
-  padding: 35px 0 36px;
+  padding: var(--compatibility-spacing-35) 0 var(--compatibility-spacing-36);
   border-top: 1px solid var(--line);
 }
 
 .sectionIntro .eyebrow {
-  margin-bottom: 9px;
-  font-size: 9px;
+  margin-bottom: var(--compatibility-spacing-9);
+  font-size: var(--compatibility-font-size-px9);
 }
 
 .sectionIntro h2 {
-  margin-bottom: 30px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 28px;
-  font-weight: 400;
-  letter-spacing: -0.6px;
+  margin-bottom: var(--compatibility-spacing-30);
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-px28);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--compatibility-letter-spacing-section);
 }
 
 .possibilities {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 38px;
+  gap: var(--compatibility-spacing-38);
 }
 
 .possibilities article {
   position: relative;
-  padding-left: 38px;
+  padding-left: var(--compatibility-spacing-38);
 }
 
 .featureIndex {
   position: absolute;
   top: -2px;
   left: 0;
-  color: #52664b;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 19px;
+  color: var(--color-compatibility-feature-index);
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-px19);
   font-style: italic;
 }
 
 .possibilities h3 {
-  margin-bottom: 7px;
-  font-size: 14px;
-  font-weight: 600;
+  margin-bottom: var(--compatibility-spacing-7);
+  font-size: var(--type-scale-small);
+  font-weight: var(--font-weight-semibold);
 }
 
 .possibilities p {
   max-width: 265px;
   margin-bottom: 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.75;
+  font-size: var(--compatibility-font-size-px13);
+  line-height: var(--compatibility-line-height-copy);
 }
 
 .welcomeFooter {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 24px;
-  padding-top: 22px;
+  gap: var(--spacing-6);
+  padding-top: var(--compatibility-spacing-22);
   border-top: 1px solid var(--line);
-  font-size: 11px;
+  font-size: var(--compatibility-font-size-px11);
 }
 
 .welcomeFooter p {
@@ -395,7 +395,7 @@
 
 .welcomeFooter a {
   flex-shrink: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
 }
 
@@ -404,91 +404,91 @@
 }
 
 .welcomeFooter a span {
-  margin-left: 8px;
+  margin-left: var(--spacing-2);
 }
 
 @media (min-width: 1440px) {
   .hero {
-    padding-top: 85px;
-    padding-bottom: 95px;
+    padding-top: var(--compatibility-spacing-85);
+    padding-bottom: var(--compatibility-spacing-95);
   }
 }
 
 @media (max-width: 900px) {
   .hero {
-    gap: 35px;
+    gap: var(--compatibility-spacing-35);
   }
 
   .storyPaper {
-    padding: 25px;
+    padding: var(--compatibility-spacing-25);
   }
 
   .storyPaper h2 {
-    font-size: 27px;
+    font-size: var(--compatibility-font-size-px27);
   }
 
   .heroCopy h1 {
-    font-size: 64px;
+    font-size: var(--compatibility-font-size-px64);
   }
 
   .possibilities {
-    gap: 24px;
+    gap: var(--spacing-6);
   }
 }
 
 @media (max-width: 700px) {
   .siteHeader {
     min-height: 82px;
-    gap: 12px;
-    padding: 18px 22px;
+    gap: var(--compatibility-spacing-12);
+    padding: var(--compatibility-spacing-18) var(--compatibility-spacing-22);
   }
 
   .brand {
-    font-size: 24px;
+    font-size: var(--type-scale-heading);
   }
 
   .navigation {
     flex-direction: column-reverse;
-    gap: 7px;
-    font-size: 12px;
+    gap: var(--compatibility-spacing-7);
+    font-size: var(--type-scale-caption);
   }
 
   .workspaceLink {
-    font-size: 11px;
+    font-size: var(--compatibility-font-size-px11);
   }
 
   .headerSignIn {
-    padding: 5px 17px;
+    padding: var(--compatibility-spacing-5) var(--compatibility-spacing-17);
   }
 
   .welcome {
-    padding: 0 24px 25px;
+    padding: 0 var(--spacing-6) var(--compatibility-spacing-25);
   }
 
   .hero {
     grid-template-columns: 1fr;
-    gap: 45px;
-    padding: 35px 0 45px;
+    gap: var(--compatibility-spacing-45);
+    padding: var(--compatibility-spacing-35) 0 var(--compatibility-spacing-45);
   }
 
   .heroCopy h1 {
-    font-size: clamp(58px, 12vw, 78px);
-    letter-spacing: -3px;
+    font-size: var(--compatibility-font-size-hero-mobile);
+    letter-spacing: var(--compatibility-letter-spacing-hero-mobile);
   }
 
   .heroDescription {
     max-width: 420px;
-    font-size: 16px;
+    font-size: var(--type-scale-body);
   }
 
   .storyPaper {
     max-width: 500px;
-    padding: 25px;
+    padding: var(--compatibility-spacing-25);
   }
 
   .possibilities {
     grid-template-columns: 1fr;
-    gap: 25px;
+    gap: var(--compatibility-spacing-25);
   }
 
   .possibilities p {
@@ -497,6 +497,6 @@
 
   .welcomeFooter {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--compatibility-spacing-12);
   }
 }

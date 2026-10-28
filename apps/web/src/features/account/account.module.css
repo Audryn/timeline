@@ -1,16 +1,16 @@
 .page {
   max-width: 1140px;
   margin: 0 auto;
-  padding: 20px 44px 30px;
+  padding: var(--compatibility-spacing-20) var(--compatibility-spacing-44) var(--compatibility-spacing-30);
 }
 
 .backLink {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 42px;
+  gap: var(--spacing-2);
+  margin-bottom: var(--compatibility-spacing-42);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-scale-caption);
   text-decoration: none;
 }
 
@@ -23,48 +23,48 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: start;
-  gap: clamp(40px, 8vw, 115px);
+  gap: var(--compatibility-spacing-account-gap);
 }
 
 .introduction {
-  padding-top: 22px;
+  padding-top: var(--compatibility-spacing-22);
 }
 
 .eyebrow {
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-4);
   color: var(--green);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.7px;
+  font-size: var(--compatibility-font-size-px10);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--compatibility-letter-spacing-account-eyebrow);
   text-transform: uppercase;
 }
 
 .introduction h2 {
-  margin-bottom: 22px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(38px, 4.2vw, 53px);
-  font-weight: 400;
-  line-height: 1.12;
-  letter-spacing: -1.7px;
+  margin-bottom: var(--compatibility-spacing-22);
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-introduction);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--compatibility-line-height-introduction);
+  letter-spacing: var(--compatibility-letter-spacing-introduction);
 }
 
 .introduction h2 em {
   color: var(--green);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
 }
 
 .introCopy {
   max-width: 340px;
-  margin-bottom: 34px;
+  margin-bottom: var(--compatibility-spacing-34);
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.85;
+  font-size: var(--type-scale-small);
+  line-height: var(--compatibility-line-height-intro-copy);
 }
 
 .steps {
   position: relative;
   display: grid;
-  gap: 24px;
+  gap: var(--spacing-6);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -84,7 +84,7 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--spacing-4);
 }
 
 .steps li > span {
@@ -93,66 +93,66 @@
   height: 29px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid #d0dcc8;
-  border-radius: 50%;
-  background: #edf1e6;
+  border: 1px solid var(--color-compatibility-step-border);
+  border-radius: var(--radii-circle);
+  background: var(--color-compatibility-step-surface);
   color: var(--green);
-  font-size: 9px;
-  font-weight: 600;
+  font-size: var(--compatibility-font-size-px9);
+  font-weight: var(--font-weight-semibold);
 }
 
 .steps strong {
   display: block;
-  margin: 2px 0 3px;
-  font-size: 13px;
-  font-weight: 600;
+  margin: var(--compatibility-spacing-2) 0 var(--compatibility-spacing-3);
+  font-size: var(--compatibility-font-size-px13);
+  font-weight: var(--font-weight-semibold);
 }
 
 .steps p {
   max-width: 280px;
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--type-scale-caption);
+  line-height: var(--compatibility-line-height-prose);
 }
 
 .asideNote {
   max-width: 350px;
-  margin: 32px 0 0;
-  padding-top: 20px;
+  margin: var(--spacing-8) 0 0;
+  padding-top: var(--compatibility-spacing-20);
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.75;
+  font-size: var(--compatibility-font-size-px11);
+  line-height: var(--compatibility-line-height-copy);
 }
 
 .card {
   min-width: 0;
-  padding: 34px;
-  border: 1px solid #d9dfd2;
-  border-radius: 16px;
+  padding: var(--compatibility-spacing-34);
+  border: 1px solid var(--color-compatibility-account-border);
+  border-radius: var(--radii-card);
   background: var(--surface);
-  box-shadow: 0 12px 42px #30452f05;
+  box-shadow: var(--shadows-account);
 }
 
 .card .eyebrow {
-  margin-bottom: 13px;
+  margin-bottom: var(--compatibility-spacing-13);
 }
 
 .title {
-  margin-bottom: 12px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 32px;
-  font-weight: 400;
-  line-height: 1.16;
-  letter-spacing: -0.9px;
+  margin-bottom: var(--compatibility-spacing-12);
+  font-family: var(--font-family-serif);
+  font-size: var(--type-scale-title);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--compatibility-line-height-account-title);
+  letter-spacing: var(--compatibility-letter-spacing-account-title);
 }
 
 .description {
-  margin-bottom: 26px;
+  margin-bottom: var(--compatibility-spacing-26);
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.75;
+  font-size: var(--compatibility-font-size-px13);
+  line-height: var(--compatibility-line-height-copy);
 }
 
 .form {
@@ -162,7 +162,7 @@
 .fields {
   display: grid;
   min-width: 0;
-  gap: 20px;
+  gap: var(--compatibility-spacing-20);
   margin: 0;
   padding: 0;
   border: 0;
@@ -174,9 +174,9 @@
 
 .field label {
   display: block;
-  margin-bottom: 7px;
-  font-size: 12px;
-  font-weight: 600;
+  margin-bottom: var(--compatibility-spacing-7);
+  font-size: var(--type-scale-caption);
+  font-weight: var(--font-weight-semibold);
 }
 
 .labelRow {
@@ -184,46 +184,46 @@
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0 12px;
+  gap: 0 var(--compatibility-spacing-12);
 }
 
 .labelRow a {
-  margin-bottom: 7px;
-  font-size: 10px;
+  margin-bottom: var(--compatibility-spacing-7);
+  font-size: var(--compatibility-font-size-px10);
 }
 
 .field input {
   width: 100%;
   min-height: 47px;
-  padding: 10px 13px;
-  border: 1px solid #cdd6c9;
-  border-radius: 7px;
-  background: #fff;
+  padding: var(--compatibility-spacing-10) var(--compatibility-spacing-13);
+  border: 1px solid var(--color-compatibility-input-border);
+  border-radius: var(--compatibility-radii-7);
+  background: var(--color-neutral-white);
   color: var(--ink);
-  font-size: 16px;
+  font-size: var(--type-scale-body);
 }
 
 .field input::placeholder {
-  color: #7b887d;
+  color: var(--color-compatibility-placeholder);
   opacity: 1;
 }
 
 .field input:focus-visible {
   border-color: var(--green);
   outline: 2px solid var(--green);
-  outline-offset: 2px;
+  outline-offset: var(--compatibility-spacing-2);
 }
 
 .field input:disabled {
-  background: #f2f3ed;
+  background: var(--color-compatibility-input-disabled);
   color: var(--muted);
 }
 
 .fieldHint {
-  margin: 7px 0 0;
+  margin: var(--compatibility-spacing-7) 0 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: var(--compatibility-font-size-px11);
+  line-height: var(--compatibility-line-height-prose);
 }
 
 .primaryButton,
@@ -233,70 +233,70 @@
   min-height: 48px;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 11px 16px;
+  gap: var(--compatibility-spacing-18);
+  padding: var(--compatibility-spacing-11) var(--spacing-4);
   border: 1px solid var(--green);
-  border-radius: 7px;
+  border-radius: var(--compatibility-radii-7);
   background: var(--green);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
+  color: var(--color-neutral-white);
+  font-size: var(--compatibility-font-size-px13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--compatibility-line-height-control);
   transition: background 150ms ease;
 }
 
 .primaryButton {
-  margin-top: 23px;
+  margin-top: var(--compatibility-spacing-23);
 }
 
 .primaryButton span {
-  font-size: 19px;
-  line-height: 1;
+  font-size: var(--compatibility-font-size-px19);
+  line-height: var(--line-height-single);
 }
 
 .primaryButton:hover:not(:disabled) {
-  background: #184d40;
+  background: var(--color-brand-hover);
 }
 
 .primaryButton:disabled,
 .secondaryButton:disabled {
-  border-color: #d4dbce;
-  background: #e8ece2;
-  color: #66715f;
+  border-color: var(--color-compatibility-button-disabled-border);
+  background: var(--color-compatibility-button-disabled-surface);
+  color: var(--color-compatibility-button-disabled-text);
 }
 
 .secondaryButton {
-  margin-top: 24px;
-  border-color: #ced8c8;
-  background: transparent;
+  margin-top: var(--spacing-6);
+  border-color: var(--color-compatibility-secondary-border);
+  background: var(--color-neutral-transparent);
   color: var(--green);
 }
 
 .secondaryButton:hover:not(:disabled) {
-  background: #edf2e8;
+  background: var(--color-compatibility-secondary-hover);
 }
 
 .connectionNote {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-scale-caption);
 }
 
 .warning,
 .information,
 .error {
-  margin: 0 0 20px;
-  padding: 12px 14px;
-  border: 1px solid #e1d3b7;
-  border-radius: 8px;
-  background: #fbf6e9;
-  color: #705727;
-  font-size: 12px;
-  line-height: 1.7;
+  margin: 0 0 var(--compatibility-spacing-20);
+  padding: var(--compatibility-spacing-12) var(--compatibility-spacing-14);
+  border: 1px solid var(--color-semantic-warning-border);
+  border-radius: var(--radii-control);
+  background: var(--color-semantic-warning-background);
+  color: var(--color-semantic-warning-foreground);
+  font-size: var(--type-scale-caption);
+  line-height: var(--compatibility-line-height-prose);
   overflow-wrap: anywhere;
 }
 
 .warning p {
-  margin: 5px 0 0;
+  margin: var(--compatibility-spacing-5) 0 0;
 }
 
 .warning a {
@@ -304,14 +304,14 @@
 }
 
 .information {
-  border-color: #d5dfd0;
-  background: #eef3e9;
+  border-color: var(--color-semantic-success-border);
+  background: var(--color-semantic-success-background);
   color: var(--green);
 }
 
 .error {
-  border-color: #e6c9c1;
-  background: #fff2ed;
+  border-color: var(--color-semantic-error-border);
+  background: var(--color-semantic-error-background);
   color: var(--danger);
 }
 
@@ -320,7 +320,7 @@
 }
 
 .feedback:not(:empty) {
-  margin-top: 18px;
+  margin-top: var(--compatibility-spacing-18);
 }
 
 .feedback > p:last-child {
@@ -329,23 +329,23 @@
 
 .textButton,
 .changeEmail {
-  padding: 3px 0;
+  padding: var(--compatibility-spacing-3) 0;
   border: 0;
-  background: transparent;
+  background: var(--color-neutral-transparent);
   color: var(--green);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-scale-caption);
+  font-weight: var(--font-weight-semibold);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: var(--compatibility-spacing-3);
 }
 
 .textButton {
-  margin-top: 8px;
+  margin-top: var(--spacing-2);
 }
 
 .changeEmail {
   display: block;
-  margin: 16px auto 0;
+  margin: var(--spacing-4) auto 0;
 }
 
 .changeEmail:disabled {
@@ -353,9 +353,9 @@
 }
 
 .switchMode {
-  margin-top: 22px;
+  margin-top: var(--compatibility-spacing-22);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-scale-caption);
   text-align: center;
 }
 
@@ -364,22 +364,22 @@
 }
 
 .switchMode a {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .confirmationLink {
   display: inline-block;
-  margin-top: 12px;
-  font-size: 11px;
+  margin-top: var(--compatibility-spacing-12);
+  font-size: var(--compatibility-font-size-px11);
 }
 
 .cardNote {
-  margin: 25px 0 0;
-  padding-top: 18px;
+  margin: var(--compatibility-spacing-25) 0 0;
+  padding-top: var(--compatibility-spacing-18);
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.75;
+  font-size: var(--compatibility-font-size-px11);
+  line-height: var(--compatibility-line-height-copy);
 }
 
 .mailIcon {
@@ -387,8 +387,8 @@
   width: 58px;
   height: 58px;
   place-items: center;
-  margin: 8px 0 21px;
-  border-radius: 16px;
+  margin: var(--spacing-2) 0 var(--compatibility-spacing-21);
+  border-radius: var(--radii-card);
   background: var(--soft-green);
 }
 
@@ -398,53 +398,53 @@
 }
 
 .emailAddress {
-  margin: -10px 0 20px;
-  font-size: 14px;
-  font-weight: 600;
+  margin: var(--compatibility-spacing-negative10) 0 var(--compatibility-spacing-20);
+  font-size: var(--type-scale-small);
+  font-weight: var(--font-weight-semibold);
   overflow-wrap: anywhere;
 }
 
 .bottomNote {
-  margin: 48px 0 0;
+  margin: var(--compatibility-spacing-48) 0 0;
   color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
+  font-family: var(--font-family-serif);
+  font-size: var(--compatibility-font-size-px13);
   font-style: italic;
   text-align: center;
 }
 
 @media (max-width: 900px) {
   .accountGrid {
-    gap: 36px;
+    gap: var(--compatibility-spacing-36);
   }
 
   .card {
-    padding: 28px;
+    padding: var(--compatibility-spacing-28);
   }
 }
 
 @media (max-width: 700px) {
   .page {
     max-width: 510px;
-    padding: 12px 24px 30px;
+    padding: var(--compatibility-spacing-12) var(--spacing-6) var(--compatibility-spacing-30);
   }
 
   .backLink {
-    margin-bottom: 26px;
+    margin-bottom: var(--compatibility-spacing-26);
   }
 
   .accountGrid {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: var(--compatibility-spacing-30);
   }
 
   .introduction {
     order: 2;
-    padding-top: 4px;
+    padding-top: var(--spacing-1);
   }
 
   .introduction h2 {
-    font-size: 36px;
+    font-size: var(--compatibility-font-size-px36);
   }
 
   .introduction h2 br {
@@ -457,19 +457,19 @@
 
   .introCopy {
     max-width: none;
-    margin-bottom: 25px;
-    font-size: 13px;
+    margin-bottom: var(--compatibility-spacing-25);
+    font-size: var(--compatibility-font-size-px13);
   }
 
   .card {
-    padding: 27px 23px;
+    padding: var(--compatibility-spacing-27) var(--compatibility-spacing-23);
   }
 
   .title {
-    font-size: 30px;
+    font-size: var(--compatibility-font-size-px30);
   }
 
   .bottomNote {
-    margin-top: 34px;
+    margin-top: var(--compatibility-spacing-34);
   }
 }
