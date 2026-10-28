@@ -18,6 +18,7 @@
     "test:built": "node scripts/testing/run.mjs built",
     "test:quality": "node scripts/testing/run.mjs quality",
     "test:local": "node scripts/testing/run.mjs local",
+    "test:smoke": "node scripts/testing/smoke.mjs",
     "test:e2e": "node scripts/testing/run.mjs browser",
     "test:integration": "node scripts/testing/provider.mjs run",
     "test:deployed:public": "node scripts/testing/deployed.mjs public",

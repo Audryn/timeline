@@ -4,7 +4,9 @@
 
 ```text
 Browser UI
-  -> same-origin Next.js route handlers
+  -> typed @timeline/shared API client and Zod contracts
+  -> thin same-origin Next.js HTTP/cookie adapters
+  -> framework-neutral backend services
   -> request-scoped Supabase client with server-managed session cookies
   -> authenticated reads under RLS / validated transactional write RPCs
   -> canonical Postgres records
@@ -31,7 +33,9 @@ equivalent to an uploaded attachment.
 | Project/people/timeline UI and filters | `apps/web/src/features/timeline` |
 | Civil dates, schemas, query logic | `apps/web/src/domain` |
 | Server auth/API helper | `apps/web/src/lib/server.ts` |
-| Browser request helper | `apps/web/src/lib/client.ts` |
+| Framework-neutral backend services | `apps/web/src/backend` |
+| Shared API client, schemas, dates | `packages/shared` |
+| Browser compatibility re-exports | `apps/web/src/lib/client.ts`, `apps/web/src/domain` |
 | IndexedDB draft schema/revision operations | `apps/web/src/lib/drafts.ts` |
 | Account/project/event endpoints | `apps/web/src/app/api` |
 | CSP, private headers, nonce propagation | `apps/web/src/proxy.ts` |

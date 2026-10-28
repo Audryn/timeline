@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { apiClient, message as errorMessage, type AccountAction, type ConnectionState, type Session } from "@timeline/shared";
 import styles from "./account.module.css";
 
-export type AccountMode = "signup" | "signin" | "reset" | "resend" | "password";
-type Session = {
-  configured: boolean;
-  user: { id: string; email: string } | null;
-};
-type Connection = "checking" | "ready" | "setup" | "error";
+export type AccountMode = AccountAction;
 
 const copy = {
   signup: {
@@ -55,77 +51,6 @@ const copy = {
   busy: string;
 }>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-async function requestJson(url: string, options?: RequestInit): Promise<unknown> {
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      cache: "no-store",
-      credentials: "same-origin",
-      ...options,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
-    throw new Error("We couldn’t reach Timeline. Check your connection and try again.");
-  }
-
-  let data: unknown;
-  try {
-    data = await response.json();
-  } catch {
-    throw new Error("Timeline returned an unreadable response. Please try again.");
-  }
-  if (!response.ok) {
-    throw new Error(
-      isRecord(data) && typeof data.error === "string"
-        ? data.error
-        : "This request could not be completed. Please try again.",
-    );
-  }
-  return data;
-}
-
-async function loadSession(signal?: AbortSignal): Promise<Session> {
-  const data = await requestJson("/api/session", { signal });
-  if (
-    !isRecord(data) ||
-    typeof data.configured !== "boolean" ||
-    !(
-      data.user === null ||
-      (isRecord(data.user) &&
-        typeof data.user.id === "string" &&
-        typeof data.user.email === "string")
-    )
-  ) {
-    throw new Error("We couldn’t check your account status. Please try again.");
-  }
-  return data as Session;
-}
-
-async function submitAccount(
-  action: AccountMode,
-  fields: { email: string } | { password: string } | { email: string; password: string },
-): Promise<string> {
-  const data = await requestJson(`/api/auth/${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fields),
-  });
-  if (!isRecord(data) || typeof data.message !== "string") {
-    throw new Error("We couldn’t confirm the result. Please try again.");
-  }
-  return data.message;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : "Something went wrong. Please try again.";
-}
-
 function continueToProjects() {
   try {
     if (typeof BroadcastChannel !== "undefined") {
@@ -151,7 +76,7 @@ export default function AccountForm({
   mode: AccountMode;
   notice?: "expired" | "failed";
 }) {
-  const [connection, setConnection] = useState<Connection>("checking");
+  const [connection, setConnection] = useState<ConnectionState>("checking");
   const [session, setSession] = useState<Session | null>(null);
   const [connectionError, setConnectionError] = useState("");
   const [email, setEmail] = useState("");
@@ -169,7 +94,7 @@ export default function AccountForm({
 
   useEffect(() => {
     const controller = new AbortController();
-    loadSession(controller.signal).then(
+    apiClient.accountSession(controller.signal).then(
       (result) => {
         if (controller.signal.aborted) return;
         setSession(result);
@@ -192,7 +117,7 @@ export default function AccountForm({
     setConnection("checking");
     setConnectionError("");
     try {
-      const result = await loadSession();
+      const result = await apiClient.accountSession();
       setSession(result);
       setConnection(result.configured ? "ready" : "setup");
     } catch (failure) {
@@ -216,7 +141,7 @@ export default function AccountForm({
           : needsPassword
             ? { email: normalizedEmail, password }
             : { email: normalizedEmail };
-      const result = await submitAccount(mode, fields);
+      const result = await apiClient.account(mode, fields);
       setPassword("");
       if (mode === "signin" || mode === "password") {
         continueToProjects();
@@ -238,7 +163,7 @@ export default function AccountForm({
     setMessage("");
     try {
       const action = mode === "reset" ? "reset" : "resend";
-      setMessage(await submitAccount(action, { email }));
+      setMessage(await apiClient.account(action, { email }));
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {

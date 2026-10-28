@@ -17,6 +17,7 @@
     "test:built": "pnpm --filter @timeline/web test:built",
     "test:quality": "pnpm --filter @timeline/web test:quality",
     "test:local": "pnpm --filter @timeline/web test:local",
+    "test:smoke": "pnpm --filter @timeline/web test:smoke",
     "test:integration": "pnpm --filter @timeline/web test:integration",
     "test:deployed:public": "pnpm --filter @timeline/web test:deployed:public",
     "test:deployed:read": "pnpm --filter @timeline/web test:deployed:read"

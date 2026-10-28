@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Category, EventInput, LifeEvent, Person, Project } from "@/domain/models";
-import { eventSchema } from "@/domain/models";
 import { dateLabel } from "@/domain/dates";
 import { drafts, removeDraft, saveDraft, type Draft } from "@/lib/drafts";
-import { message, request, RequestError } from "@/lib/client";
+import { apiClient, message, RequestError } from "@/lib/client";
 import { DateFields } from "./date-fields";
 import { submission, type EventForm } from "./form";
 import styles from "../timeline/workspace.module.css";
@@ -113,7 +112,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
       setPending(payload);
       await persist(form, payload);
       contactedServer = true;
-      await request(`/api/projects/${project.id}/events`, z.object({ id: z.uuid(), version: z.number() }), payload);
+      await apiClient.saveEvent(project.id, payload);
       await queue.current;
       await removeDraft(drafts(), initial.key, revision.current);
       onSaved();
@@ -127,7 +126,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
         try { await persist(form, null); } catch (failure) { setError(`${message(problem)} ${message(failure)}`); }
         if (problem.status === 409) {
           try {
-            const latest = await request(`/api/projects/${project.id}/events?event=${form.id}`, z.object({ events: z.array(eventSchema), hasMore: z.boolean() }));
+            const latest = await apiClient.events(project.id, new URLSearchParams({ event: form.id }));
             setCurrent(latest.events[0] ?? null);
           } catch (failure) { setError(`${message(problem)} Current version unavailable: ${message(failure)}`); }
         }

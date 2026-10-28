@@ -2,21 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
 import {
-  categorySchema, eventSchema, personSchema, projectSchema, sessionSchema,
-  type Category, type LifeEvent, type Person, type Project,
-} from "@/domain/models";
+  type Category, type LifeEvent, type Person, type Project, type ProjectInput,
+  type PersonInput, type ProjectDetail as Detail, type Session,
+} from "@timeline/shared";
 import { dateLabel } from "@/domain/dates";
-import { request, message, RequestError } from "@/lib/client";
+import { apiClient, message, RequestError } from "@/lib/client";
 import { drafts, draftSchema, type Draft } from "@/lib/drafts";
 import { emptyDate, formForEvent } from "../events/form";
 import { EventEditor } from "../events/event-editor";
 import styles from "./workspace.module.css";
 
-const detailSchema = z.object({ project: projectSchema, people: z.array(personSchema), categories: z.array(categorySchema) });
-type Session = z.infer<typeof sessionSchema>;
-type Detail = z.infer<typeof detailSchema>;
 type TimelineFilter = { people: string[]; categories: string[]; text: string; from: string; to: string; undated: boolean };
 function emptyFilter(): TimelineFilter { return { people: [], categories: [], text: "", from: "", to: "", undated: true }; }
 
@@ -27,12 +23,12 @@ function ProjectForm({ onCreated, onCancel }: { onCreated: (id: string) => void;
   const [hemisphere, setHemisphere] = useState<"northern" | "southern">("northern");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState<Record<string, string> | null>(null);
+  const [attempt, setAttempt] = useState<ProjectInput | null>(null);
   async function save() {
     const payload = attempt ?? { requestId: crypto.randomUUID(), name, personName, personKind, hemisphere };
     setBusy(true); setError(""); setAttempt(payload);
     try {
-      const result = await request("/api/projects", z.object({ id: z.uuid() }), payload);
+      const result = await apiClient.createProject(payload);
       onCreated(result.id);
     } catch (problem) {
       setError(message(problem));
@@ -94,7 +90,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
     const controller = new AbortController();
     async function load() {
       try {
-        const current = await request("/api/session", sessionSchema, undefined, controller.signal);
+        const current = await apiClient.session(controller.signal);
         if (controller.signal.aborted) return;
         if (currentOwner.current && currentOwner.current !== current.user?.id) {
           await accountChanged();
@@ -104,10 +100,10 @@ export function Workspace({ projectId }: { projectId?: string }) {
         setSession(current);
         if (!current.user) { setDetail(null); setProjects([]); setEditor(null); return; }
         if (projectId) {
-          const result = await request(`/api/projects/${projectId}`, detailSchema, undefined, controller.signal);
+          const result = await apiClient.project(projectId, controller.signal);
           if (!controller.signal.aborted) setDetail(result);
         } else {
-          const result = await request("/api/projects", z.array(projectSchema), undefined, controller.signal);
+          const result = await apiClient.projects(controller.signal);
           if (!controller.signal.aborted) setProjects(result);
         }
         setError("");
@@ -128,7 +124,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
     const revalidate = async () => {
       if (document.visibilityState !== "visible") return;
       try {
-        const next = await request("/api/session", sessionSchema);
+        const next = await apiClient.session();
         if ((next.user?.id ?? null) !== currentOwner.current) await accountChanged();
         else if (!flush.current) setRefresh((value) => value + 1);
       } catch (problem) { setError(`Could not check the current session. ${message(problem)}`); }
@@ -147,7 +143,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
         if (!lock) throw new Error("Another tab has an open event editor. Close it to save its draft before signing out.");
         const count = await drafts().drafts.where("owner").equals(session.user!.id).count();
         if (count && !window.confirm(`Discard ${count} browser draft(s) and sign out? Cancel to return and save them first.`)) return;
-        await request("/api/auth/signout", z.object({ message: z.string() }), {});
+        await apiClient.signOut();
         let cleanupError = "";
         try { await drafts().drafts.where("owner").equals(session.user!.id).delete(); }
         catch (problem) { cleanupError = `Signed out, but browser draft cleanup failed. Clear this site's data before sharing the device. ${message(problem)}`; }
@@ -215,11 +211,11 @@ function People({ project, people, onAdded }: { project: Project; people: Person
   const [open, setOpen] = useState(false); const [name, setName] = useState("");
   const [kind, setKind] = useState<"real" | "fictional">("real");
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
-  const [pending, setPending] = useState<{ requestId: string; name: string; kind: string } | null>(null);
+  const [pending, setPending] = useState<PersonInput | null>(null);
   async function add() {
     setBusy(true); setError("");
     const input = pending ?? { requestId: crypto.randomUUID(), name, kind }; setPending(input);
-    try { await request(`/api/projects/${project.id}/people`, personSchema, input); setPending(null); setName(""); setOpen(false); onAdded(); }
+    try { await apiClient.addPerson(project.id, input); setPending(null); setName(""); setOpen(false); onAdded(); }
     catch (problem) {
       setError(message(problem));
       if (problem instanceof RequestError && problem.status > 0 && problem.status < 500) setPending(null);
@@ -252,7 +248,7 @@ function Timeline({ project, people, categories, refresh, onEdit, onAdd, filter,
     const params = new URLSearchParams({ offset: String(page * 50), q: applied.text, from: applied.from, to: applied.to, undated: String(applied.undated) });
     applied.people.forEach((id) => params.append("person", id));
     applied.categories.forEach((id) => params.append("category", id));
-    request(`/api/projects/${project.id}/events?${params}`, z.object({ events: z.array(eventSchema), hasMore: z.boolean() }), undefined, abort.signal)
+    apiClient.events(project.id, params, abort.signal)
       .then((data) => {
         if (abort.signal.aborted) return;
         setEvents((old) => page ? Array.from(new Map([...old, ...data.events].map((event) => [event.id, event])).values()) : data.events);

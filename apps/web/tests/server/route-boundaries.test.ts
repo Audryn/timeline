@@ -3,6 +3,8 @@ import type { AuthError, SupabaseClient, User } from "@supabase/supabase-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 import type { eventInputSchema, personInputSchema, projectInputSchema } from "../../src/domain/models";
+import { createBackend } from "../../src/backend";
+import { ApiError, type BackendDependencies } from "../../src/backend/core";
 import { GET as sessionGET } from "../../src/app/api/session/route";
 import { GET as projectsGET, POST as projectPOST } from "../../src/app/api/projects/route";
 import { GET as projectGET } from "../../src/app/api/projects/[id]/route";
@@ -176,6 +178,57 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+});
+
+describe("framework-neutral backend with an injected provider", () => {
+  function injectedBackend() {
+    // The fixture implements only the provider operations exercised by these services.
+    const client = {
+      auth: boundary.auth, rpc: boundary.rpc, from: boundary.from,
+    } as unknown as SupabaseClient;
+    const createClient = vi.fn<BackendDependencies["createClient"]>().mockResolvedValue(client);
+    return {
+      createClient,
+      service: createBackend({ createClient, configured: () => true, appOrigin: () => ORIGIN }),
+    };
+  }
+
+  it("uses injected identity and RPCs without the Next cookie/client adapter", async () => {
+    vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", undefined);
+    const { service, createClient } = injectedBackend();
+    const acknowledged = { id: EVENT_ID, version: 4 };
+    boundary.rpc.mockResolvedValue({ data: acknowledged, error: null });
+
+    await expect(service.saveEvent(
+      writeRequest(`/api/projects/${PROJECT_ID}/events`, JSON.stringify(EVENT)), PROJECT_ID,
+    )).resolves.toEqual(acknowledged);
+
+    expect(createClient).toHaveBeenCalledExactlyOnceWith();
+    expect(boundary.auth.getUser).toHaveBeenCalledExactlyOnceWith();
+    expect(boundary.rpc).toHaveBeenCalledExactlyOnceWith("save_event", {
+      p_project: PROJECT_ID,
+      p_input: { ...EVENT, title: "Fictional departure", location: "Imaginary harbour" },
+    });
+    expect(boundary.cookies).not.toHaveBeenCalled();
+    expect(boundary.createServerClient).not.toHaveBeenCalled();
+  });
+
+  it("keeps pagination validation before authentication but filter validation after it", async () => {
+    const { service, createClient } = injectedBackend();
+    boundary.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    await expect(service.listEvents(
+      new Request(`${ORIGIN}/api/projects/${PROJECT_ID}/events?offset=-1&person=invalid`), PROJECT_ID,
+    )).rejects.toMatchObject(new ApiError(400, "Invalid page."));
+    expect(createClient).not.toHaveBeenCalled();
+
+    await expect(service.listEvents(
+      new Request(`${ORIGIN}/api/projects/${PROJECT_ID}/events?person=invalid`), PROJECT_ID,
+    )).rejects.toMatchObject(new ApiError(401, "Sign in to continue. Your local draft has not been submitted."));
+    expect(createClient).toHaveBeenCalledExactlyOnceWith();
+    expect(boundary.from).not.toHaveBeenCalled();
+    expect(boundary.cookies).not.toHaveBeenCalled();
+  });
 });
 
 describe("exported routes with real server helpers (not a Next HTTP-context test)", () => {

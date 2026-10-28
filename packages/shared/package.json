@@ -3,6 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./index.ts" },
-  "dependencies": { "zod": "^4" }
+  "exports": {
+    ".": "./index.ts",
+    "./dates": "./dates.ts",
+    "./models": "./models.ts",
+    "./client": "./client.ts",
+    "./contracts": "./contracts.ts"
+  },
+  "dependencies": { "zod": "^4" },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "^5",
+    "vitest": "^5"
+  }
 }

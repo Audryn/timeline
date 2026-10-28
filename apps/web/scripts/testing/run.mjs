@@ -31,6 +31,10 @@ async function run(lane, args = []) {
   await runNode([...command, ...args], env);
   if (lane === "typecheck") {
     await runNode([join(projectRoot, "node_modules", "typescript", "bin", "tsc"), "--noEmit"], env);
+    await runNode([join(projectRoot, "node_modules", "typescript", "bin", "tsc"), "--project", join(projectRoot, "../../packages/shared/tsconfig.json")], env);
+  }
+  if (lane === "lint") {
+    await runNode(command, env, { cwd: join(projectRoot, "../../packages/shared") });
   }
 }
 

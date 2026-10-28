@@ -9,10 +9,18 @@ const eslintConfig = defineConfig([
   {
     files: ["scripts/testing/**/*.mjs"],
     languageOptions: {
-      globals: { process: "readonly", console: "readonly", URL: "readonly", fetch: "readonly", Buffer: "readonly", setTimeout: "readonly", clearTimeout: "readonly" },
+      globals: { process: "readonly", console: "readonly", URL: "readonly", fetch: "readonly", Buffer: "readonly", AbortSignal: "readonly", setTimeout: "readonly", clearTimeout: "readonly" },
     },
   },
   { files: ["**/*.{ts,tsx}"], plugins: { "react-hooks": hooks }, rules: hooks.configs.recommended.rules },
+  {
+    files: ["src/features/**/*.{ts,tsx}", "src/app/**/*.tsx"],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-globals": ["error", { name: "fetch", message: "Use the typed @timeline/shared API client." }],
+      "no-restricted-imports": ["error", { patterns: [{ group: ["@supabase/*"], message: "Provider clients belong in the backend, not browser UI." }] }],
+    },
+  },
   globalIgnores([
     ".next/**",
     ".next-test-browser/**",
