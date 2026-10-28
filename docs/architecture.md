@@ -31,7 +31,11 @@ equivalent to an uploaded attachment.
 | Account forms | `apps/web/src/features/account` |
 | Event editor and form/date conversion | `apps/web/src/features/events` |
 | Project/people/timeline UI and filters | `apps/web/src/features/timeline` |
-| Civil dates, schemas, query logic | `apps/web/src/domain` |
+| Shared controls, feedback, cards, mobile navigation | `apps/web/src/components` |
+| Reusable request busy/error state | `apps/web/src/lib/use-request-state.ts` |
+| Civil dates, schemas, typed API client | `packages/shared` |
+| Server query/filter composition | `apps/web/src/domain/filters.ts` |
+| Shared design tokens / generated CSS audit | `packages/shared/tokens.ts`, `apps/web/scripts/design` |
 | Server auth/API helper | `apps/web/src/lib/server.ts` |
 | Framework-neutral backend services | `apps/web/src/backend` |
 | Shared API client, schemas, dates | `packages/shared` |
@@ -70,7 +74,7 @@ without losing the browser draft or silently upserting missing records.
 
 ### Dates and filtering
 
-`apps/web/src/domain/dates.ts` preserves civil components, precision, and approximate
+`packages/shared/dates.ts` (re-exported by the app domain module) preserves civil components, precision, and approximate
 wording independently of time zones. PostgreSQL's date helpers must agree,
 including strict JSON shape validation, leap days, and cross-year seasons.
 Custom dates may have placement bounds; ongoing ranges keep an open end.
@@ -90,6 +94,27 @@ Open editors use Web Locks; sign-out must not discard another tab's editing.
 Account changes hide private UI, flush pending edits where possible, and
 clear private state. Preserve visibility/account-change revalidation and
 explicit cleanup-failure feedback.
+
+Internal route links are intercepted while the event editor is mounted, since
+Next.js client navigation does not trigger `beforeunload`. The user must close
+the editor through its acknowledged draft-flush path first. A failed flush
+leaves the form and recovery download available. Browser unload protection is
+still best-effort, not an offline durability guarantee.
+
+### Remaining client responsibilities
+
+The web client still owns form/date-draft conversion, filters and pagination
+intent, busy/error/focus presentation, account-change revalidation, and the
+IndexedDB/Web Locks/editor lifecycle. These are client interaction and recovery
+concerns, not authority to validate ownership or commit canonical records.
+Reusable controls and request state do not flatten pending-request identity,
+conflict resolution, or owner-scoped draft state into a generic fetch hook.
+
+Authoritative authentication/ownership, input validation, persistence and
+transaction semantics live in neutral backend services and PostgreSQL. The
+Next.js adapter still owns HTTP, cookies and provider construction. A native
+client needs its own secure authentication/deep-link and storage lifecycle;
+see [flows](FLOWS.md) and [API gaps](API.md).
 
 ## Future mechanisms, not current capabilities
 

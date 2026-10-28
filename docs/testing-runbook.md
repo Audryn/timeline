@@ -17,11 +17,11 @@ git status --short
 
 Use the Node version required by `package.json`. If dependencies are missing,
 stop the app and restore them with `corepack pnpm install --frozen-lockfile`; do not run it after every edit.
-Keep `.env.local` intact and never paste its values into test reports.
+Keep `apps\web\.env.local` intact and never paste its values into test reports.
 
 All commands below are local unless explicitly labeled **disposable
 integration** or **deployed**. The default local lane does not require Docker,
-Supabase credentials, or an email inbox. First-time npm/browser installation
+Supabase credentials, or an email inbox. First-time pnpm/browser installation
 requires network access; normal fixture tests must not use hosted services.
 
 ## 2. Daily local loop
@@ -61,8 +61,11 @@ This is the integrated local gate. It includes the appropriate type, lint,
 logic/database, browser, built-app, and web-quality checks. A failed stage
 stops the aggregate. There is no automatic cloud fallback.
 
-The generated OpenAPI specification is checked for structural validity and
-schema drift first. `corepack pnpm api:check` runs that check plus actual
+Generated design tokens and their exhaustive CSS audit are checked first
+(`corepack pnpm tokens:check`); regenerate deliberate token edits with
+`corepack pnpm tokens:generate`. See the [token audit](DESIGN-TOKENS.md).
+The generated OpenAPI specification is then checked for structural validity
+and schema drift. `corepack pnpm api:check` runs that check plus actual
 production-mode HTTP contracts for every documented operation using the
 loopback provider. See [API notes](API.md); no hosted service is contacted.
 `corepack pnpm test:smoke` separately starts/stops an owned app and checks

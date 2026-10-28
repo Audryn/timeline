@@ -16,6 +16,7 @@ It is a starting point for ongoing curation, not a frozen transcript.
 | [Architecture](architecture.md) | Current mechanisms, code map, and design invariants |
 | [API contract](openapi.yaml) and [API notes](API.md) | Generated HTTP schemas, validation and preserved inconsistencies |
 | [User flows](FLOWS.md) | Screen/API map for the web app and future native client |
+| [Design tokens](DESIGN-TOKENS.md) | Shared light/dark palettes, Tailwind integration, exact compatibility values and exhaustive deviation audit |
 | [Native preparation decision](decisions/0002-native-preparation-workspace.md) | Workspace and framework-neutral boundary scope |
 | [Testing plan](testing-plan.md) | Manual cases, local automated checks, coverage gaps, and future release gates |
 | [Testing runbook](testing-runbook.md) | Executable local/provider/deployed commands, safeguards, and troubleshooting |

@@ -23,6 +23,7 @@ Every browser API operation uses `packages/shared/client.ts`; schemas are in
 | Account switch | Any open workspace -> Hide old private UI -> Flush draft -> Reload | `GET /api/session` on focus/account broadcasts; previous owner's draft remains scoped |
 | Sign out | Workspace -> Confirm draft handling -> Sign in | cross-tab exclusive lock; `POST /api/auth/signout`; owner-scoped IndexedDB cleanup; broadcast |
 | Missing setup | Account/workspace -> Setup instructions | session returns `configured=false,user=null`; no invented account/save |
+| Mobile navigation | Home / Projects / Account route links; selected destination marked current | existing screen loads only; no new API or fake tab destinations |
 
 ## Screen and state invariants for SwiftUI
 
@@ -38,6 +39,10 @@ Every browser API operation uses `packages/shared/client.ts`; schemas are in
   focus, storage, navigation and editing lifecycle remain client responsibilities.
 - The mobile tab bar links only existing Home, Projects and Account screens;
   it does not pretend unimplemented stories/media/export screens exist.
+- While an event editor is open, internal route links (including the header)
+  are blocked with focused feedback. Close editor must successfully flush the
+  latest draft before navigation is permitted. A failed flush leaves the
+  editor and download route available; navigation never publishes a draft.
 
 ## Native gaps and API inconsistencies
 

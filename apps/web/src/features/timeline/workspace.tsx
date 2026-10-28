@@ -6,11 +6,13 @@ import {
   type Category, type LifeEvent, type Person, type Project, type ProjectInput,
   type PersonInput, type ProjectDetail as Detail, type Session,
 } from "@timeline/shared";
-import { dateLabel } from "@/domain/dates";
+import { Button, TextField } from "@/components/ui";
+import { useRequestState } from "@/lib/use-request-state";
 import { apiClient, message, RequestError } from "@/lib/client";
 import { drafts, draftSchema, type Draft } from "@/lib/drafts";
 import { emptyDate, formForEvent } from "../events/form";
 import { EventEditor } from "../events/event-editor";
+import { EventCard } from "../events/event-card";
 import styles from "./workspace.module.css";
 
 type TimelineFilter = { people: string[]; categories: string[]; text: string; from: string; to: string; undated: boolean };
@@ -21,8 +23,7 @@ function ProjectForm({ onCreated, onCancel }: { onCreated: (id: string) => void;
   const [personName, setPersonName] = useState("");
   const [personKind, setPersonKind] = useState<"real" | "fictional">("real");
   const [hemisphere, setHemisphere] = useState<"northern" | "southern">("northern");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const { busy, setBusy, error, setError } = useRequestState();
   const [attempt, setAttempt] = useState<ProjectInput | null>(null);
   async function save() {
     const payload = attempt ?? { requestId: crypto.randomUUID(), name, personName, personKind, hemisphere };
@@ -42,13 +43,13 @@ function ProjectForm({ onCreated, onCancel }: { onCreated: (id: string) => void;
     {attempt && !busy && <p className={styles.notice}>The save is unconfirmed. Retry the same request before changing these details.</p>}
     <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
       <fieldset disabled={busy || Boolean(attempt)} className={styles.formFields}>
-        <label>Project name<input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label>
-        <label>First person or character&apos;s name<input required maxLength={100} value={personName} onChange={(event) => setPersonName(event.target.value)} /></label>
+        <TextField label="Project name" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
+        <TextField label="First person or character's name" required maxLength={100} value={personName} onChange={(event) => setPersonName(event.target.value)} />
         <label>Profile type<select value={personKind} onChange={(event) => setPersonKind(event.target.value as typeof personKind)}><option value="real">Real person</option><option value="fictional">Fictional character</option></select></label>
         <label>Hemisphere for seasonal dates<select value={hemisphere} onChange={(event) => setHemisphere(event.target.value as typeof hemisphere)}><option value="northern">Northern</option><option value="southern">Southern</option></select></label>
       </fieldset>
-      <div className={styles.actions}><button className={styles.primary} disabled={busy} type="submit">{busy ? "Creating..." : attempt ? "Retry project creation" : "Create project"}</button>
-        <button className={styles.secondary} disabled={busy || Boolean(attempt)} type="button" onClick={onCancel}>Cancel</button></div>
+      <div className={styles.actions}><Button className={styles.primary} disabled={busy} type="submit">{busy ? "Creating..." : attempt ? "Retry project creation" : "Create project"}</Button>
+        <Button className={styles.secondary} disabled={busy || Boolean(attempt)} type="button" onClick={onCancel}>Cancel</Button></div>
       <p className={styles.hint}>Your timeline and editable category templates are created together. No birth date or photo needed.</p>
     </form>
   </section>;
@@ -58,12 +59,11 @@ export function Workspace({ projectId }: { projectId?: string }) {
   const [session, setSession] = useState<Session | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [error, setError] = useState("");
+  const { error, setError, busy: signingOut, setBusy: setSigningOut } = useRequestState();
   const [creating, setCreating] = useState(false);
   const [editor, setEditor] = useState<Draft | null>(null);
   const [notice, setNotice] = useState("");
   const [refresh, setRefresh] = useState(0);
-  const [signingOut, setSigningOut] = useState(false);
   const [changingAccount, setChangingAccount] = useState(false);
   const [privacyIssue, setPrivacyIssue] = useState("");
   const [timelineFilter, setTimelineFilter] = useState<TimelineFilter>(emptyFilter);
@@ -116,7 +116,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
     }
     void load();
     return () => controller.abort();
-  }, [projectId, refresh, clearPrivate, accountChanged]);
+  }, [projectId, refresh, clearPrivate, accountChanged, setError]);
 
   useEffect(() => {
     const channel = new BroadcastChannel("timeline-account");
@@ -131,7 +131,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
     };
     document.addEventListener("visibilitychange", revalidate);
     return () => { channel.close(); document.removeEventListener("visibilitychange", revalidate); };
-  }, [accountChanged]);
+  }, [accountChanged, setError]);
 
   async function signOut() {
     if (!session?.user || signingOut) return;
@@ -174,9 +174,9 @@ export function Workspace({ projectId }: { projectId?: string }) {
   return <>{changingAccount && <p role="status" className={styles.notice}>The account changed. Protecting your draft and reopening the workspace...</p>}<section hidden={changingAccount} className={styles.workspace}>
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}>Your life, in context</p><h1>{detail?.project.name ?? "Your projects"}</h1></div>
-      {session?.user && <div className={styles.account}><span>{session.user.email}</span><button className={styles.secondary} disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out..." : "Sign out"}</button></div>}
+      {session?.user && <div className={styles.account}><span>{session.user.email}</span><Button className={styles.secondary} disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out..." : "Sign out"}</Button></div>}
     </div>
-    {error && <div className={styles.error} role="alert">{error} <button className={styles.textButton} onClick={() => setRefresh((value) => value + 1)}>Retry loading</button></div>}
+    {error && <div className={styles.error} role="alert">{error} <Button className={styles.textButton} onClick={() => setRefresh((value) => value + 1)}>Retry loading</Button></div>}
     {privacyIssue && <p className={styles.error} role="alert">{privacyIssue}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {!session && !error && <p role="status">Opening your workspace...</p>}
@@ -188,13 +188,13 @@ export function Workspace({ projectId }: { projectId?: string }) {
     </div>}
     {session?.configured && !session.user && <div className={styles.empty}><h2>A private place for your memories.</h2><p>Sign in or create a verified account to start a project.</p><Link className={styles.primary} href="/account?mode=signin">Sign in</Link></div>}
     {session?.user && !projectId && !creating && <>
-      <div className={styles.heading}><p className={styles.hint}>Keep your own life, family stories, and fictional worlds in separate projects.</p><button className={styles.primary} onClick={() => setCreating(true)}>+ New project</button></div>
-      {!projects.length && !error ? <div className={styles.empty}><h2>Every life has a story.</h2><p>Start with a project and one person. Your timeline will grow one memory at a time.</p><button className={styles.primary} onClick={() => setCreating(true)}>Create your first project</button></div> :
+      <div className={styles.heading}><p className={styles.hint}>Keep your own life, family stories, and fictional worlds in separate projects.</p><Button className={styles.primary} onClick={() => setCreating(true)}>+ New project</Button></div>
+      {!projects.length && !error ? <div className={styles.empty}><h2>Every life has a story.</h2><p>Start with a project and one person. Your timeline will grow one memory at a time.</p><Button className={styles.primary} onClick={() => setCreating(true)}>Create your first project</Button></div> :
         <div className={styles.projects}>{projects.map((project) => <Link className={styles.projectCard} key={project.id} href={`/projects/${project.id}`}><p className={styles.eyebrow}>Life project</p><h2>{project.name}</h2><p>{project.hemisphere === "northern" ? "Northern" : "Southern"} hemisphere</p><span>Open timeline &rarr;</span></Link>)}</div>}
     </>}
     {session?.user && creating && <ProjectForm onCancel={() => setCreating(false)} onCreated={(id) => window.location.assign(`/projects/${id}`)} />}
     {session?.user && detail && !editor && <>
-      <div className={styles.heading}><Link href="/projects" className={styles.back}>&larr; All projects</Link><button className={styles.primary} onClick={() => void openEditor()}>+ Add event / recover new draft</button></div>
+      <div className={styles.heading}><Link href="/projects" className={styles.back}>&larr; All projects</Link><Button className={styles.primary} onClick={() => void openEditor()}>+ Add event / recover new draft</Button></div>
       <People project={detail.project} people={detail.people} onAdded={() => setRefresh((value) => value + 1)} />
       <Timeline key={`${detail.project.id}:${refresh}`} project={detail.project} people={detail.people} categories={detail.categories} refresh={refresh}
         filter={timelineFilter} applied={appliedFilter} onFilter={setTimelineFilter} onApplied={setAppliedFilter}
@@ -210,7 +210,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
 function People({ project, people, onAdded }: { project: Project; people: Person[]; onAdded: () => void }) {
   const [open, setOpen] = useState(false); const [name, setName] = useState("");
   const [kind, setKind] = useState<"real" | "fictional">("real");
-  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const { busy, setBusy, error, setError } = useRequestState();
   const [pending, setPending] = useState<PersonInput | null>(null);
   async function add() {
     setBusy(true); setError("");
@@ -222,12 +222,12 @@ function People({ project, people, onAdded }: { project: Project; people: Person
     } finally { setBusy(false); }
   }
   return <section className={styles.people}>
-    <div className={styles.actions}><strong>People in this project</strong>{people.map((person) => <span className={styles.pill} key={person.id}>{person.name}{person.kind === "fictional" ? " / character" : ""}</span>)}<button className={styles.textButton} onClick={() => setOpen(!open)}>+ Add person or character</button></div>
+    <div className={styles.actions}><strong>People in this project</strong>{people.map((person) => <span className={styles.pill} key={person.id}>{person.name}{person.kind === "fictional" ? " / character" : ""}</span>)}<Button className={styles.textButton} onClick={() => setOpen(!open)}>+ Add person or character</Button></div>
     {open && <form className={styles.personForm} onSubmit={(event) => { event.preventDefault(); void add(); }}>
       <fieldset className={styles.formFields} disabled={busy || Boolean(pending)}>
-        <label>Display name<input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></label>
+        <TextField label="Display name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} />
         <label>Type<select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}><option value="real">Real person</option><option value="fictional">Fictional character</option></select></label>
-      </fieldset><button className={styles.secondary} disabled={busy}>{busy ? "Adding..." : pending ? "Retry adding person" : "Add to project"}</button>
+      </fieldset><Button type="submit" className={styles.secondary} disabled={busy}>{busy ? "Adding..." : pending ? "Retry adding person" : "Add to project"}</Button>
       {error && <p role="alert" className={styles.error}>{error}</p>}
     </form>}
   </section>;
@@ -240,7 +240,7 @@ function Timeline({ project, people, categories, refresh, onEdit, onAdd, filter,
   onFilter: (value: TimelineFilter) => void; onApplied: (value: TimelineFilter) => void;
 }) {
   const [events, setEvents] = useState<LifeEvent[]>([]);
-  const [error, setError] = useState(""); const [loading, setLoading] = useState(true);
+  const { error, setError, busy: loading, setBusy: setLoading } = useRequestState(true);
   const [more, setMore] = useState(false); const [page, setPage] = useState(0);
   const [generation, setGeneration] = useState(0);
   useEffect(() => {
@@ -257,7 +257,7 @@ function Timeline({ project, people, categories, refresh, onEdit, onAdd, filter,
       .catch((problem) => { if (!abort.signal.aborted) setError(message(problem)); })
       .finally(() => { if (!abort.signal.aborted) setLoading(false); });
     return () => abort.abort();
-  }, [project.id, page, applied, refresh, generation]);
+  }, [project.id, page, applied, refresh, generation, setError, setLoading]);
   return <section aria-label="Project timeline">
     <form className={styles.filters} onSubmit={(event) => { event.preventDefault(); setLoading(true); setPage(0); onApplied({ ...filter }); }}>
       <label>Search memories<input type="search" maxLength={200} placeholder="A place, a moment, a person..." value={filter.text} onChange={(event) => onFilter({ ...filter, text: event.target.value })} /></label>
@@ -266,28 +266,20 @@ function Timeline({ project, people, categories, refresh, onEdit, onAdd, filter,
       <label>From<input type="date" value={filter.from} onChange={(event) => onFilter({ ...filter, from: event.target.value })} /></label>
       <label>To<input type="date" value={filter.to} onChange={(event) => onFilter({ ...filter, to: event.target.value })} /></label>
       <label className={styles.check}><input type="checkbox" checked={filter.undated} onChange={(event) => onFilter({ ...filter, undated: event.target.checked })} />Include Undated</label>
-      <button className={styles.secondary}>Apply filters</button>
-      <button className={styles.textButton} type="button" onClick={() => { const empty = emptyFilter(); onFilter(empty); onApplied(empty); setPage(0); setLoading(true); }}>Clear</button>
+      <Button type="submit" className={styles.secondary}>Apply filters</Button>
+      <Button className={styles.textButton} type="button" onClick={() => { const empty = emptyFilter(); onFilter(empty); onApplied(empty); setPage(0); setLoading(true); }}>Clear</Button>
       <p className={styles.hint}>No selection includes everyone/all categories. Multiple selections match any item within that filter.</p>
     </form>
-    {error && <p role="alert" className={styles.error}>{error} <button className={styles.textButton} onClick={() => { setLoading(true); setGeneration((value) => value + 1); }}>Retry events</button></p>}
+    {error && <p role="alert" className={styles.error}>{error} <Button className={styles.textButton} onClick={() => { setLoading(true); setGeneration((value) => value + 1); }}>Retry events</Button></p>}
     {loading && <p role="status">Loading memories...</p>}
-    {!loading && !error && events.length === 0 && <div className={styles.empty}><span className={styles.largeSymbol}>+</span><h2>Your story can start anywhere.</h2><p>Add a first home, a school year, or a friendship. You don&apos;t need an exact date.</p><button className={styles.primary} onClick={onAdd}>Add an event</button><p className={styles.hint}>If you have already added events, try clearing the filters.</p></div>}
+    {!loading && !error && events.length === 0 && <div className={styles.empty}><span className={styles.largeSymbol}>+</span><h2>Your story can start anywhere.</h2><p>Add a first home, a school year, or a friendship. You don&apos;t need an exact date.</p><Button className={styles.primary} onClick={onAdd}>Add an event</Button><p className={styles.hint}>If you have already added events, try clearing the filters.</p></div>}
     <ol className={styles.timeline}>{events.map((event, index) => {
       const year = event.start_date?.slice(0, 4) ?? "Undated";
       const previousYear = events[index - 1]?.start_date?.slice(0, 4) ?? (index ? "Undated" : null);
       return <li key={event.id}>{year !== previousYear && <h2 className={styles.year}>{year}</h2>}
-        <article className={styles.event}>
-          <p className={styles.date}>{dateLabel(event.date)} <span>{event.date.kind === "range" ? " / duration" : event.date.kind === "unknown" ? "" : " / date precision preserved"}</span></p>
-          <button className={styles.eventTitle} onClick={() => onEdit(event)}>{event.title}</button>
-          {event.location && <p className={styles.location}>{event.location}</p>}
-          <p className={styles.participants}>{people.filter((person) => event.person_ids.includes(person.id)).map((person) => person.name).join(", ")}</p>
-          <div className={styles.actions}>{event.category_ids.length ? categories.filter((category) => event.category_ids.includes(category.id)).map((category) => <span className={styles.pill} key={category.id}>{category.name}</span>) : <span className={styles.pill}>Uncategorized</span>}</div>
-          {event.description && <p className={styles.notes}>{event.description}</p>}
-          <button className={styles.textButton} onClick={() => onEdit(event)}>Edit event / recover draft &rarr;</button>
-        </article>
+        <EventCard event={event} people={people} categories={categories} onEdit={onEdit} />
       </li>;
     })}</ol>
-    {more && <button className={styles.secondary} disabled={loading} onClick={() => { setLoading(true); setPage((value) => value + 1); }}>Load more memories</button>}
+    {more && <Button className={styles.secondary} disabled={loading} onClick={() => { setLoading(true); setPage((value) => value + 1); }}>Load more memories</Button>}
   </section>;
 }

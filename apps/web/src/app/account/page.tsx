@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AccountForm, { type AccountMode } from "@/features/account/account-form";
+import { Card } from "@/components/ui";
 import styles from "@/features/account/account.module.css";
 
 export const metadata: Metadata = {
@@ -76,9 +77,9 @@ export default async function AccountPage({
             People and characters in a project do not need their own accounts.
           </p>
         </aside>
-        <section className={styles.card} aria-label="Timeline account">
+        <Card className={styles.card} aria-label="Timeline account">
           <AccountForm key={`${mode}:${notice ?? ""}`} mode={mode} notice={notice} />
-        </section>
+        </Card>
       </div>
       <p className={styles.bottomNote}>
         Your life, in context. At your own pace.

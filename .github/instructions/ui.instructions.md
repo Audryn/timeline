@@ -1,11 +1,16 @@
 ---
-applyTo: "apps/web/src/app/**/*.tsx,apps/web/src/features/**/*.tsx,apps/web/src/**/*.css"
+applyTo: "apps/web/src/**/*.tsx,apps/web/src/**/*.css"
 ---
 
 # UI and capture workflows
 
-- Use the established warm-paper/forest-green visual language, CSS Modules,
-  system fonts, and shared global tokens. Keep layouts responsive.
+- Use the established warm-paper/forest-green visual language, CSS Modules
+  or configured Tailwind utilities, system fonts, and shared tokens from
+  `packages/shared/tokens.ts`. Run `pnpm tokens:check`; deliberate compatibility
+  and structural exceptions are documented in `docs/DESIGN-TOKENS.md`.
+- Reuse `components/ui.tsx`, `features/events/event-card.tsx`, and
+  `lib/use-request-state.ts` rather than duplicating controls or request
+  feedback. Keep pending request/draft ownership outside generic UI state.
 - Root layout owns `main#main-content`; route content must not create another
   main landmark. Preserve the skip link and nonce-compatible dynamic rendering.
 - Use semantic controls, accessible labels/legends, visible keyboard focus,
@@ -29,6 +34,9 @@ applyTo: "apps/web/src/app/**/*.tsx,apps/web/src/features/**/*.tsx,apps/web/src/
   base-version choice. Do not turn a failed save into a success toast.
 - Preserve cross-tab draft revision checks, editor locks, and account-change
   flushing/cleanup. Hide private UI during account transitions.
+- Keep mobile navigation as real route links with `aria-current`, not fake
+  ARIA tabs. Internal navigation must not bypass the editor's explicit
+  close/acknowledged-flush path or discard failed/pending local writes.
 - Request microphone/file access only when the user chooses that feature.
   Do not add fake working controls for unfinished stories, media, or export.
 - Browser recording/transcription is capability-dependent. No remote speech

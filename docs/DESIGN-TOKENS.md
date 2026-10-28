@@ -5,6 +5,22 @@ extracts the **existing** welcome, account and workspace styles; it does not
 approve a redesign, normalize near-identical colors, change mobile breakpoints,
 or approve/update screenshot baselines.
 
+The subsequent approved mobile step adds a bottom navigation bar and
+single-column workspace controls at 700px and below. Its colors, typography
+and spacing use the same tokens; desktop rendering is unchanged. The four
+deliberate new structural entries in `inventory.json` are listed separately:
+
+| File | Context | Retained geometry |
+| --- | --- | --- |
+| `src/components/mobile-navigation.module.css` | Mobile breakpoint | `(max-width: 700px)` |
+| `src/components/mobile-navigation.module.css` | Navigation destinations | `repeat(3, minmax(0, 1fr))` |
+| `src/features/timeline/workspace.module.css` | Mobile breakpoint | `(max-width: 700px)` |
+| `src/features/timeline/workspace.module.css` | Filters, civil inputs, projects | `minmax(0, 1fr)` |
+
+These are additions, not replacements of the 831 original audit occurrences.
+Safe-area geometry uses the browser's inset; bottom content clearance is
+composed from shared spacing tokens. The audit now checks five stylesheets.
+
 ## Contract and commands
 
 Run with the repository's Node 24 (native TypeScript stripping, no TS runtime

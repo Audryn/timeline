@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { apiClient, message as errorMessage, type AccountAction, type ConnectionState, type Session } from "@timeline/shared";
+import { Button, RequestFeedback } from "@/components/ui";
+import { useRequestState } from "@/lib/use-request-state";
 import styles from "./account.module.css";
 
 export type AccountMode = AccountAction;
@@ -81,11 +83,9 @@ export default function AccountForm({
   const [connectionError, setConnectionError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { busy, setBusy, error, setError } = useRequestState();
   const [step, setStep] = useState<"form" | "verify" | "email-sent">("form");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const feedbackRef = useRef<HTMLDivElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const content = copy[mode];
   const needsPassword = mode === "signup" || mode === "signin" || mode === "password";
@@ -108,10 +108,6 @@ export default function AccountForm({
     );
     return () => controller.abort();
   }, []);
-
-  useEffect(() => {
-    if (error || message) feedbackRef.current?.focus();
-  }, [error, message]);
 
   async function retryConnection() {
     setConnection("checking");
@@ -232,9 +228,9 @@ export default function AccountForm({
           <div className={styles.warning}>
             <strong>Account service unavailable</strong>
             <p>{connectionError}</p>
-            <button type="button" className={styles.textButton} onClick={retryConnection}>
+            <Button type="button" className={styles.textButton} onClick={retryConnection}>
               Try connecting again
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -307,22 +303,16 @@ export default function AccountForm({
               </div>
             )}
           </fieldset>
-          <div ref={feedbackRef} tabIndex={-1} className={styles.feedback}>
-            {error && <p role="alert" className={styles.error}>{error}</p>}
-            {message && <p role="status" className={styles.information}>{message}</p>}
-          </div>
-          <button type="submit" disabled={disabled} className={styles.primaryButton}>
+          <RequestFeedback error={error} message={message} className={styles.feedback} errorClassName={styles.error} messageClassName={styles.information} />
+          <Button type="submit" disabled={disabled} busy={busy} className={styles.primaryButton}>
             {busy ? content.busy : content.submit}
             {!busy && <span aria-hidden="true">→</span>}
-          </button>
+          </Button>
         </form>
       ) : (
         <div className={styles.emailInstructions} aria-busy={busy}>
           <p className={styles.emailAddress}>{email}</p>
-          <div ref={feedbackRef} tabIndex={-1} className={styles.feedback}>
-            {error && <p role="alert" className={styles.error}>{error}</p>}
-            {message && <p role="status" className={styles.information}>{message}</p>}
-          </div>
+          <RequestFeedback error={error} message={message} className={styles.feedback} errorClassName={styles.error} messageClassName={styles.information} />
           <p className={styles.fieldHint}>
             {step === "verify"
               ? "Follow the email link to continue. Timeline checks confirmation on the server before opening your projects; creating an account or resending a link does not confirm your email."
@@ -330,12 +320,12 @@ export default function AccountForm({
                 ? "Open the email link to choose a new password. Request a fresh link if the previous one has expired."
                 : "Follow the confirmation link, then sign in if asked. Sending an email does not confirm the account."}
           </p>
-          <button type="button" className={styles.secondaryButton} disabled={disabled} onClick={sendAgain}>
+          <Button type="button" className={styles.secondaryButton} disabled={disabled} onClick={sendAgain}>
             {busy ? "Sending email…" : mode === "reset" ? "Send another reset email" : "Resend confirmation email"}
-          </button>
-          <button type="button" className={styles.changeEmail} disabled={busy} onClick={changeEmail}>
+          </Button>
+          <Button type="button" className={styles.changeEmail} disabled={busy} onClick={changeEmail}>
             Change email address
-          </button>
+          </Button>
         </div>
       )}
 

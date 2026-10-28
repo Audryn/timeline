@@ -10,6 +10,13 @@ server adapters, migrations and test runners. `packages/shared` contains
 framework-neutral client contracts and design tokens. `docs` stays at root.
 Use `corepack pnpm install --frozen-lockfile` to restore dependencies.
 
+The native-preparation boundaries are documented in [architecture](docs/architecture.md),
+[API contracts and inconsistencies](docs/API.md), [screen flows](docs/FLOWS.md),
+and the [design-token audit](docs/DESIGN-TOKENS.md). Backend services remain
+framework-neutral behind Next.js adapters; this is not a separate API server
+or an implemented SwiftUI client. Dark palettes are provided, but a finished
+dark-mode interface is not claimed.
+
 The private environment file belongs at `apps\web\.env.local`, not at root.
 Do not overwrite an existing file or rerun already deployed migrations.
 Local tests need no Supabase credentials. All shared-package tests are included
@@ -31,6 +38,7 @@ This is the first-use implementation, not the finished MVP:
 - Shared events, notes, location text, flexible Gregorian dates, vertical timelines, search, and filters.
 - Account-scoped IndexedDB event drafts with explicit online saves, request replay protection, and stale-edit handling.
 - Supabase migrations and real PostgreSQL-WASM integration tests for transactions and owner isolation.
+- Shared accessible controls and feedback, single-column mobile forms, and Home/Projects/Account bottom navigation with explicit draft-preservation guards.
 
 Attachments, recording/transcription, guided prompts/stories, category editing, project/person editing, Trash/purge, account deletion, session lock, and PDF export are **not implemented yet**. Do not use this development build as the sole home for real personal histories or deploy it as a production-ready journal.
 
@@ -38,11 +46,12 @@ Without Supabase configuration the app displays setup guidance. It does not pret
 
 ## Run on Windows
 
-Node.js 24 and the pinned pnpm version are required. Enable pnpm with
-`corepack enable pnpm`. Node was installed using winget during the initial setup:
+Install **Node.js 24**, matching `package.json`; a generic "latest LTS"
+installer may select an unsupported major. Enable the pinned pnpm:
 
 ```powershell
-winget install --id OpenJS.NodeJS.LTS --exact
+node --version
+corepack enable pnpm
 ```
 
 Open a fresh PowerShell window after installation, then:
@@ -113,6 +122,7 @@ The migration enables RLS, grants authenticated read access, and restricts aggre
 
 - Only a server acknowledgment means an event is saved to the account.
 - In an open editor, drafts autosave into the current browser/profile's IndexedDB. Saving an event online is an explicit action.
+- Internal route links are blocked while an event editor is open. Close the editor to flush its latest draft before navigating; failed storage keeps the editor and download option available.
 - Unknown dates and unplaced custom wording appear in Undated. Seasons preserve their precision and use the project's hemisphere; cross-year seasons use their starting year.
 - Multiple people/categories are OR selections within a filter, combined with AND across filter types. Date filters use overlap. Include Undated controls undated entries independently of the date window.
 - A network failure can leave the save outcome uncertain. Retry the same stored request before editing; idempotency avoids duplicate writes.
@@ -136,7 +146,7 @@ remaining feature and infrastructure gates.
 corepack pnpm test:local
 ```
 
-The aggregate runs typecheck, lint, unit/components/routes, database contracts,
+The aggregate checks generated tokens and OpenAPI drift, then runs typecheck, lint, unit/components/routes, database contracts,
 Edge browser scenarios, production-built HTTP checks, and automated web-quality
 checks. See the runbook for focused lanes; `corepack pnpm test` and `test:e2e` remain
 compatible shortcuts but do not cover every gate.

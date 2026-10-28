@@ -79,7 +79,7 @@ test("axe checks populated timeline, editor and preserved conflict", async ({ co
   await checkAxe(page, testInfo, "editor-conflict");
 });
 
-test("390px long-content timeline and editor reflow without clipped actions", async ({ context, page }) => {
+test("390px long-content timeline and editor reflow without clipped actions", async ({ context, page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await qualityWorkspace(context, [qualityEvent(1, true)], true);
   await openTimeline(page);
@@ -98,6 +98,7 @@ test("390px long-content timeline and editor reflow without clipped actions", as
     page.getByRole("button", { name: "Save event to account", exact: true }),
     page.getByRole("button", { name: "Download draft copy", exact: true }),
   ]);
+  await checkAxe(page, testInfo, "mobile-editor-navigation");
 });
 
 test("200% viewport-equivalent reflow and separate doubled text preserve editor actions", async ({ context, page }, testInfo) => {

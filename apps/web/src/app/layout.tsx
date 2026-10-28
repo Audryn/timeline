@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
+import { MobileNavigation } from "@/components/mobile-navigation";
+import mobileStyles from "@/components/mobile-navigation.module.css";
 import "./globals.css";
 import styles from "./page.module.css";
 
@@ -17,7 +19,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="en">
-      <body>
+      <body className={mobileStyles.body}>
         <a href="#main-content" className={styles.skipLink}>
           Skip to content
         </a>
@@ -42,6 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <main id="main-content" tabIndex={-1} className={styles.mainContent}>
           {children}
         </main>
+        <MobileNavigation />
       </body>
     </html>
   );

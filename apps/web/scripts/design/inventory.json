@@ -2,6 +2,24 @@
   "version": 1,
   "description": "Original pre-token declarations. Historical evidence, not a second token source. Every occurrence and retained structural literal is recorded.",
   "files": {
+    "src/components/mobile-navigation.module.css": [
+      {
+        "line": 3,
+        "context": "@media (max-width: 700px)",
+        "property": "@media",
+        "original": "(max-width: 700px)",
+        "replacement": "(max-width: 700px)",
+        "decision": "structural"
+      },
+      {
+        "line": 15,
+        "context": "@media (max-width: 700px) / .navigation",
+        "property": "grid-template-columns",
+        "original": "repeat(3, minmax(0, 1fr))",
+        "replacement": "repeat(3, minmax(0, 1fr))",
+        "decision": "structural"
+      }
+    ],
     "src/app/globals.css": [
       {
         "line": 2,
@@ -4505,6 +4523,22 @@
       }
     ],
     "src/features/timeline/workspace.module.css": [
+      {
+        "line": 65,
+        "context": "@media (max-width: 700px)",
+        "property": "@media",
+        "original": "(max-width: 700px)",
+        "replacement": "(max-width: 700px)",
+        "decision": "structural"
+      },
+      {
+        "line": 66,
+        "context": "@media (max-width: 700px) / .filters, .civil, .projects",
+        "property": "grid-template-columns",
+        "original": "minmax(0, 1fr)",
+        "replacement": "minmax(0, 1fr)",
+        "decision": "structural"
+      },
       {
         "line": 1,
         "context": ".workspace",

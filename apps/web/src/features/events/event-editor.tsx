@@ -8,6 +8,8 @@ import { drafts, removeDraft, saveDraft, type Draft } from "@/lib/drafts";
 import { apiClient, message, RequestError } from "@/lib/client";
 import { DateFields } from "./date-fields";
 import { submission, type EventForm } from "./form";
+import { Button, TextField } from "@/components/ui";
+import { useRequestState } from "@/lib/use-request-state";
 import styles from "../timeline/workspace.module.css";
 
 export function EventEditor({ initial, project, people, categories, onSaved, onClose, registerFlush }: {
@@ -18,8 +20,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
   const [form, setForm] = useState<EventForm>(initial.form);
   const [pending, setPending] = useState<EventInput | null>(initial.pending);
   const [status, setStatus] = useState("Recovering draft...");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { error, setError, busy: saving, setBusy: setSaving } = useRequestState();
   const [current, setCurrent] = useState<LifeEvent | null>(null);
   const [leased, setLeased] = useState(false);
   const revision = useRef(initial.revision);
@@ -29,6 +30,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
   const identity = useRef(initial);
   const snapshot = useRef(initial.form);
   const titleInput = useRef<HTMLInputElement>(null);
+  const errorFeedback = useRef<HTMLParagraphElement>(null);
 
   const persist = useCallback((snapshot: EventForm, attempt: EventInput | null) => {
     const task = queue.current.then(async () => {
@@ -43,9 +45,26 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
   useEffect(() => {
     alive.current = true;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    // Next client navigation does not fire beforeunload. Require the explicit
+    // close/flush path rather than abandoning a pending or failed draft write.
+    const guardNavigation = (event: MouseEvent) => {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>("a[href]");
+      if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+      const destination = new URL(link.href);
+      if (destination.origin !== location.origin || (destination.pathname === location.pathname && destination.search === location.search)) return;
+      event.preventDefault();
+      setError("Close the editor to save its draft before navigating. If storage fails, download a copy before leaving.");
+      requestAnimationFrame(() => { errorFeedback.current?.focus(); });
+    };
     window.addEventListener("beforeunload", warn);
-    return () => { alive.current = false; clearTimeout(timer.current); window.removeEventListener("beforeunload", warn); };
-  }, []);
+    document.addEventListener("click", guardNavigation, true);
+    return () => {
+      alive.current = false; clearTimeout(timer.current);
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", guardNavigation, true);
+    };
+  }, [setError]);
   useEffect(() => {
     registerFlush(async () => {
       clearTimeout(timer.current);
@@ -72,7 +91,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
       stopped = true; controller.abort();
       void queue.current.then(() => release?.());
     };
-  }, [initial.owner]);
+  }, [initial.owner, setError]);
   useEffect(() => {
     if (leased) titleInput.current?.focus();
   }, [leased]);
@@ -84,7 +103,7 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
       });
     }, 400);
     return () => clearTimeout(timer.current);
-  }, [form, persist]);
+  }, [form, persist, setError]);
 
   function change<K extends keyof EventForm>(key: K, value: EventForm[K]) {
     const next = { ...form, [key]: value };
@@ -152,28 +171,28 @@ export function EventEditor({ initial, project, people, categories, onSaved, onC
   }
   return <section className={styles.editor} aria-labelledby="event-editor-title">
     <div className={styles.heading}><div><p className={styles.eyebrow}>{project.name} / {form.version ? "Edit event" : "New memory"}</p><h2 id="event-editor-title">A moment to remember.</h2></div>
-      <button className={styles.secondary} onClick={() => void close()} disabled={saving}>Close editor</button></div>
+      <Button className={styles.secondary} onClick={() => void close()} disabled={saving}>Close editor</Button></div>
     <p className={styles.hint}>Save a memory with as much, or as little, detail as you know.</p>
     <p role="status" className={styles.notice}>{status}</p>
-    {error && <p role="alert" className={styles.error}>{error}</p>}
+    {error && <p ref={errorFeedback} tabIndex={-1} role="alert" className={styles.error}>{error}</p>}
     {pending && <p className={styles.notice}>An earlier save is unconfirmed. Retry it before editing or leaving; it may already have reached the server.</p>}
     {current && <aside className={styles.conflict}><h3>Current account version</h3><strong>{current.title}</strong><p>{dateLabel(current.date)}</p><p>{current.description || "No notes"}</p><p>Your draft is still in the form below. Compare and merge it, then explicitly save against version {current.version}.</p>
-      <button className={styles.secondary} onClick={() => { change("version", current.version); setCurrent(null); }}>Keep my draft and use this base version</button></aside>}
+      <Button className={styles.secondary} onClick={() => { change("version", current.version); setCurrent(null); }}>Keep my draft and use this base version</Button></aside>}
     <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
       <fieldset disabled={saving || Boolean(pending) || !leased} className={styles.formFields}>
-        <label>What happened? <span className={styles.hint}>(required)</span><input ref={titleInput} maxLength={200} value={form.title} onChange={(event) => change("title", event.target.value)} /></label>
+        <TextField label={<>What happened? <span className={styles.hint}>(required)</span></>} ref={titleInput} maxLength={200} value={form.title} onChange={(event) => change("title", event.target.value)} />
         <fieldset className={styles.choices}><legend>Who was involved? (choose at least one)</legend>{people.map((person) =>
           <label className={styles.check} key={person.id}><input type="checkbox" checked={form.personIds.includes(person.id)} onChange={() => toggle("personIds", person.id)} />{person.name}{person.kind === "fictional" ? " (character)" : ""}</label>)}</fieldset>
         <fieldset className={styles.choices}><legend>Categories (optional)</legend>{categories.map((category) =>
           <label className={styles.check} key={category.id}><input type="checkbox" checked={form.categoryIds.includes(category.id)} onChange={() => toggle("categoryIds", category.id)} />{category.name}</label>)}</fieldset>
         <DateFields value={form.date} onChange={(value) => change("date", value)} hemisphere={project.hemisphere} />
-        <label>Location (optional)<input maxLength={300} value={form.location} onChange={(event) => change("location", event.target.value)} /></label>
+        <TextField label="Location (optional)" maxLength={300} value={form.location} onChange={(event) => change("location", event.target.value)} />
         <label>Notes (optional)<textarea rows={5} maxLength={20000} value={form.description} onChange={(event) => change("description", event.target.value)} /></label>
       </fieldset>
       <div className={styles.actions}>
-        <button className={styles.primary} type="submit" disabled={saving || !leased}>{saving ? "Saving..." : pending ? "Retry unconfirmed save" : "Save event to account"}</button>
-        <button className={styles.secondary} type="button" onClick={download}>Download draft copy</button>
-        <button className={styles.textButton} type="button" disabled={saving || Boolean(pending)} onClick={() => void discard()}>Discard draft</button>
+        <Button className={styles.primary} type="submit" busy={saving} disabled={saving || !leased}>{saving ? "Saving..." : pending ? "Retry unconfirmed save" : "Save event to account"}</Button>
+        <Button className={styles.secondary} type="button" onClick={download}>Download draft copy</Button>
+        <Button className={styles.textButton} type="button" disabled={saving || Boolean(pending)} onClick={() => void discard()}>Discard draft</Button>
       </div>
       <p className={styles.hint}>Publishing requires a connection. Browser drafts can be lost if site data is cleared; downloads are outside account protection.</p>
     </form>

@@ -16,11 +16,12 @@ Do not silently reintroduce the earlier native iOS/custom-sync plan.
 | Milestone | Outcome | Current evidence / remaining gate |
 | --- | --- | --- |
 | Isolated local lanes | Explicit fixture environment, no hosted credentials/mail, owned server lifecycle | Local aggregate passed |
-| Logic/components/routes | Domain/form/client rules, component behavior and actual route validation | 127 unit/component/route tests passed |
+| Logic/components/routes | Domain/form/client rules, component behavior and actual route validation | 132 unit/component/route/shared tests passed |
 | SQL/contracts | Actual PGlite migrations and request-policy containment | 80 tests passed; not actual Supabase Auth/PostgREST |
-| Browser recovery | Edge storage/lock/account-transition, replay/conflict, filter/pagination | 20 browser cases passed |
+| Browser recovery | Edge storage/lock/account-transition, replay/conflict, filter/pagination, guarded mobile navigation | 23 browser cases passed |
 | Web quality | Accessibility, focus/reflow, reviewed visual and informational metrics | 8 quality cases passed; human/device review remains |
-| Built-app boundary | Actual Next HTTP/cookies/nonces/hydration with loopback provider | 3 cases passed; not HTTPS browser-cookie evidence |
+| Built-app boundary | Actual Next HTTP/cookies/nonces/hydration and every documented operation with loopback provider | 4 cases passed; not HTTPS browser-cookie evidence |
+| Shared design/API drift | Generated tokens, CSS literal inventory, OpenAPI/Zod and route/response contract agreement | Local aggregate passed; dark UI and native auth remain separate work |
 | Real provider/captured email | Disposable Auth/PostgREST/database and Mailpit spec/runner | Implemented but Blocked: suitable Docker/CLI runner unavailable |
 | Deployed probes | Separate public/synthetic-read guards; no journal writes or emails | No-network guard tests pass; no actual deployment provisioned/tested |
 | Runbook and acceptance | Commands, case/evidence map and reporting | Full local aggregate passed; external acceptance remains Blocked |
