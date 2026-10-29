@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   turbopack: { root: resolve(import.meta.dirname, "../..") },
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   ...(testMode ? {
+    devIndicators: false,
     distDir: testMode === "browser" ? ".next-test-browser" : ".next-test-built",
     typescript: { tsconfigPath: `scripts/testing/tsconfig.${testMode}.json` },
   } : {}),

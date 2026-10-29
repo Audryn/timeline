@@ -422,10 +422,10 @@ local fixtures do not erase unexecuted external requirements.
 
 | Order / Priority | Work | Implementation / remaining evidence |
 | --- | --- | --- |
-| 1 / P0 | Real provider smoke | Disposable signup/reset/captured-mail/event/isolation spec exists. Actual execution is Blocked until a suitable Docker/Supabase runner is available |
+| 1 / P0 | Real provider smoke | Disposable signup/reset/captured-mail/event/isolation scenario and owned-stack cleanup passed at the 2026-10-29 checkpoint; Internet mail and HTTPS/device acceptance remain separate |
 | 2 / P0 | Server-route/auth contracts | Typed boundary tests execute actual handlers/helpers; built tests execute actual Next HTTP/cookies. Real provider refresh and HTTPS evidence remain separate |
-| 3 / P0 | Recovery faults | Edge and IndexedDB regressions cover storage failures, reopen/retry, tab conflicts and account transitions. Real committed-acknowledgment loss is specified in the disposable provider workflow, not yet verified here |
-| 4 / P1 | Actual PostgREST membership | Provider spec asserts combined text/person/date matching and nonmatching IDs. Real execution and fuller category/Undated membership cases still require that lane |
+| 3 / P0 | Recovery faults | Edge and IndexedDB regressions cover storage failures, reopen/retry, tab conflicts and account transitions. Real committed-acknowledgment loss and identical retry passed in the disposable provider workflow |
+| 4 / P1 | Actual PostgREST membership | Combined text/person/date matching and nonmatching results passed against real PostgREST. Fuller category/Undated membership cases remain additional provider coverage |
 | 5 / P1 | Pagination and forms | Browser pagination/date cases and focused form round-trip tests supplement domain tests; record exact fixtures and environment with each run |
 | 6 / P1 | Explicit test environments | Local runner supplies fixture values and blocks server egress; environment/guard regressions prevent hosted credentials or live email from entering the inner loop |
 | 7 / P1 | Web quality and deployed behavior | Edge axe/focus/reflow/visual checks exist. Screen readers, other engines, real devices and actual HTTPS deployments are not established by them |

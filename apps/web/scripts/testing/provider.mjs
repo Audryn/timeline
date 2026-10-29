@@ -23,7 +23,7 @@ function execute(executable, args, options = {}) {
     ...options,
   });
   if (result.error || result.status !== 0) throw new Error("Required integration command failed.");
-  return result.stdout.trim();
+  return result.stdout === null ? "" : result.stdout.trim();
 }
 try {
   if (mode === "--help") {

@@ -22,15 +22,24 @@ Do not silently reintroduce the earlier native iOS/custom-sync plan.
 | Web quality | Accessibility, focus/reflow, reviewed visual and informational metrics | 8 quality cases passed; human/device review remains |
 | Built-app boundary | Actual Next HTTP/cookies/nonces/hydration and every documented operation with loopback provider | 4 cases passed; not HTTPS browser-cookie evidence |
 | Shared design/API drift | Generated tokens, CSS literal inventory, OpenAPI/Zod and route/response contract agreement | Local aggregate passed; dark UI and native auth remain separate work |
-| Real provider/captured email | Disposable Auth/PostgREST/database and Mailpit spec/runner | Implemented but Blocked: suitable Docker/CLI runner unavailable |
+| Real provider/captured email | Disposable Auth/PostgREST/database and Mailpit spec/runner | Passed: real captured signup/reset, atomic events, filters, owner isolation, replay/version checks and owned-stack cleanup |
 | Deployed probes | Separate public/synthetic-read guards; no journal writes or emails | No-network guard tests pass; no actual deployment provisioned/tested |
-| Runbook and acceptance | Commands, case/evidence map and reporting | Full local aggregate passed; external acceptance remains Blocked |
+| Runbook and acceptance | Commands, case/evidence map and reporting | Full local aggregate and disposable-provider lane passed; HTTPS deployment, Internet email and real-device acceptance remain unverified |
 
 Use the [testing runbook](testing-runbook.md) for executable procedures and
 [testing plan](testing-plan.md) for case IDs, manual evidence, and release gates.
 These counts describe the implementation's local acceptance checkpoint, not a
 permanent guarantee for future changes. Record the tested commit/dirty state and
 rerun affected gates after edits. An unexecuted environment is not a pass.
+
+The 2026-10-29 checkpoint exercised commit `5a601c1` with two working-tree
+test-harness fixes: disable the development indicator only in automated
+Next.js mode, and handle absent captured stdout when a successful provider
+child inherits stdio. All 247 local cases and the real-provider scenario
+passed, along with typecheck/lint, token/OpenAPI checks and app smoke.
+The provider run used Supabase CLI 2.122.0 and Docker Engine 29.9.2 on ARM64.
+The existing local stack was stopped with data retained, then restored;
+account/project counts were unchanged and Auth/preview HTTP checks passed.
 
 ## Current external prerequisites
 

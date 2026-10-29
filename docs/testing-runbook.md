@@ -108,12 +108,14 @@ Unhandled requests and fixture drift are failures. A response-shaped stub is
 not proof that a real provider sent an email. Keep independent expected values
 and use provider integration after changing auth/SDK/SQL/filter contracts.
 
-## 4. Real provider integration (separate machine/runner)
+## 4. Real provider integration (approved isolated stack)
 
 **Do not install Docker on the borrowed PC just to run the local loop.**
 Use an approved machine with Docker, a compatible installed Supabase CLI,
 Node, and Microsoft Edge. No hosted project or production credentials are
 needed. Bootstrap those prerequisites through a separate approved operation.
+An existing development machine is suitable when those prerequisites are
+already approved; the test stack must still be separate from existing data.
 
 **PowerShell on that runner:**
 
@@ -141,7 +143,11 @@ the test app origin and expected callback type; unexpected links fail.
 No person opens an inbox or copies a token during the automated run.
 
 The stack uses standard local Supabase ports and the app test port. If those
-are occupied, use a different approved runner or stop only an instance you own.
+are occupied, use a different approved runner or, with operator approval,
+stop only an instance you own. To preserve an existing development stack,
+use `supabase stop` from its project directory **without `--no-backup`**,
+run the isolated tests, then restore it with `supabase start` from that
+same directory even if the tests fail. Verify its health after restoration.
 The harness does not reset a hosted project or attach to another stack.
 
 After success it stops its owned stack without retaining a data backup and
@@ -152,8 +158,9 @@ Investigate a cleanup failure explicitly instead of deleting broad temp folders.
 
 ### Evidence limitations
 
-This lane cannot be declared verified until it has actually run on a suitable
-runner. Its mail capture does not prove Internet SMTP/DNS/inbox deliverability.
+The disposable-provider lane passed at the 2026-10-29 checkpoint, including
+owned-stack cleanup; see [recorded evidence](project-plan.md).
+Its mail capture does not prove Internet SMTP/DNS/inbox deliverability.
 Secure-cookie and full HTTPS deployment behavior need a trusted HTTPS
 environment; do not weaken cookie settings to make HTTP look equivalent.
 
@@ -251,7 +258,7 @@ not erase that gap.
 | `corepack pnpm install --frozen-lockfile` permission/file-lock failure | Stop the server using its dependencies, then retry; do not immediately escalate to administrator |
 | Account service unavailable | Check site HTTP, then session endpoint, then redacted configuration/provider diagnostics |
 | Successful resend but no email | Check confirmation/no-op status versus actual captured delivery; respect separate user cooldown and project quota |
-| Provider command blocked | Verify prerequisites on the separate suitable runner; do not fall back to hosted credentials |
+| Provider command blocked | Verify prerequisites on the approved isolated runner; do not fall back to hosted credentials |
 | Deployment command blocked | Check exact HTTPS approval, synthetic identity prerequisites, and mode; do not disable the guard |
 | Draft/conflict regression | Keep the synthetic reproducer and independent server/browser state; never erase the draft to hide failure |
 
