@@ -7,7 +7,8 @@ import { Button, RequestFeedback } from "@/components/ui";
 import { useRequestState } from "@/lib/use-request-state";
 import styles from "./account.module.css";
 
-export type AccountMode = AccountAction;
+export type AccountMode = Exclude<AccountAction, "verify-phone">;
+type ContactMethod = "email" | "phone";
 
 const copy = {
   signup: {
@@ -53,7 +54,7 @@ const copy = {
   busy: string;
 }>;
 
-function continueToProjects() {
+function continueToProjects(destination = "/projects") {
   try {
     if (typeof BroadcastChannel !== "undefined") {
       const channel = new BroadcastChannel("timeline-account");
@@ -68,29 +69,53 @@ function continueToProjects() {
       type: error instanceof Error ? error.name : typeof error,
     });
   }
-  window.location.assign("/projects");
+  window.location.assign(destination);
 }
 
 export default function AccountForm({
   mode,
   notice,
+  phoneEnabled = false,
+  initialMethod = "email",
 }: {
   mode: AccountMode;
   notice?: "expired" | "failed";
+  phoneEnabled?: boolean;
+  initialMethod?: ContactMethod;
 }) {
   const [connection, setConnection] = useState<ConnectionState>("checking");
   const [session, setSession] = useState<Session | null>(null);
   const [connectionError, setConnectionError] = useState("");
   const [email, setEmail] = useState("");
+  const [method, setMethod] = useState<ContactMethod>(phoneEnabled ? initialMethod : "email");
+  const [phone, setPhone] = useState("");
+  const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const { busy, setBusy, error, setError } = useRequestState();
-  const [step, setStep] = useState<"form" | "verify" | "email-sent">("form");
+  const [step, setStep] = useState<"form" | "verify" | "email-sent" | "sms-sent">("form");
   const [message, setMessage] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
-  const content = copy[mode];
+  const tokenRef = useRef<HTMLInputElement>(null);
+  const isPhone = method === "phone";
+  const contact = isPhone ? { phone } : { email };
+  const content = isPhone && (mode === "reset" || mode === "resend")
+    ? { ...copy[mode],
+      label: mode === "reset" ? "A fresh start" : "Phone confirmation",
+      title: mode === "reset" ? "Forgot your password?" : "Need a new code?",
+      description: mode === "reset"
+        ? "Enter your phone number. Verify the text-message code to choose a new password."
+        : "Enter the phone number you used to sign up to request another confirmation code.",
+      submit: mode === "reset" ? "Send reset text" : "Send confirmation text",
+      busy: "Sending text message…",
+    } : copy[mode];
+  const accountLink = (nextMode: AccountMode) => `/account?mode=${nextMode}${isPhone ? "&method=phone" : ""}`;
   const needsPassword = mode === "signup" || mode === "signin" || mode === "password";
   const passwordSessionMissing = mode === "password" && connection === "ready" && !session?.user;
   const disabled = busy || connection !== "ready" || passwordSessionMissing;
+
+  useEffect(() => {
+    if (step === "sms-sent" && !busy && !error) tokenRef.current?.focus();
+  }, [step, busy, error]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -129,14 +154,17 @@ export default function AccountForm({
     setError("");
     setMessage("");
     const normalizedEmail = email.trim();
+    const normalizedPhone = phone.trim();
     setEmail(normalizedEmail);
+    setPhone(normalizedPhone);
     try {
+      const normalizedContact = isPhone ? { phone: normalizedPhone } : { email: normalizedEmail };
       const fields =
         mode === "password"
           ? { password }
           : needsPassword
-            ? { email: normalizedEmail, password }
-            : { email: normalizedEmail };
+            ? { ...normalizedContact, password }
+            : normalizedContact;
       const result = await apiClient.account(mode, fields);
       setPassword("");
       if (mode === "signin" || mode === "password") {
@@ -144,7 +172,24 @@ export default function AccountForm({
         return;
       }
       setMessage(result);
-      setStep(mode === "signup" ? "verify" : "email-sent");
+      setStep(isPhone ? "sms-sent" : mode === "signup" ? "verify" : "email-sent");
+    } catch (failure) {
+      setError(errorMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyPhone(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (disabled) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiClient.account("verify-phone", { phone, token });
+      setToken("");
+      continueToProjects(mode === "reset" ? "/account?mode=password" : "/projects");
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -159,7 +204,8 @@ export default function AccountForm({
     setMessage("");
     try {
       const action = mode === "reset" ? "reset" : "resend";
-      setMessage(await apiClient.account(action, { email }));
+      setMessage(await apiClient.account(action, contact));
+      if (isPhone) setToken("");
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -167,18 +213,27 @@ export default function AccountForm({
     }
   }
 
-  function changeEmail() {
+  function changeContact() {
     setStep("form");
     setMessage("");
     setError("");
     setPassword("");
+    setToken("");
     requestAnimationFrame(() => emailRef.current?.focus());
+  }
+
+  function changeMethod(next: ContactMethod) {
+    setMethod(next);
+    setPassword("");
+    setToken("");
+    setMessage("");
+    setError("");
   }
 
   return (
     <>
-      <p className={styles.eyebrow}>{step === "form" ? content.label : "Check your email"}</p>
-      {step !== "form" && (
+      <p className={styles.eyebrow}>{step === "form" ? content.label : isPhone ? "Phone confirmation" : "Check your email"}</p>
+      {step !== "form" && !isPhone && (
         <div className={styles.mailIcon} aria-hidden="true">
           <svg width="30" height="26" viewBox="0 0 30 26" fill="none">
             <rect x="2" y="4" width="26" height="19" rx="3" />
@@ -187,11 +242,13 @@ export default function AccountForm({
         </div>
       )}
       <h1 className={styles.title}>
-        {step === "form" ? content.title : "Check your inbox."}
+        {step === "form" ? content.title : isPhone ? "Check your text messages." : "Check your inbox."}
       </h1>
       <p className={styles.description}>
         {step === "form"
           ? content.description
+          : isPhone
+            ? "Enter the six-digit code sent to your phone. Sending a text does not confirm your account."
           : step === "verify"
             ? "Open the confirmation link sent to your email to confirm your account."
             : "If this address is eligible, an email is on its way. Check your inbox and spam folder."}
@@ -237,7 +294,7 @@ export default function AccountForm({
 
       {session?.user && mode !== "password" && step === "form" && (
         <div className={styles.information}>
-          Signed in as <strong>{session.user.email}</strong>.{" "}
+          Signed in as <strong>{session.user.email || session.user.phone}</strong>.{" "}
           <Link href="/projects">Continue to your workspace</Link>.
         </div>
       )}
@@ -245,8 +302,8 @@ export default function AccountForm({
         <div className={styles.warning} role="alert">
           <strong>A valid recovery session is required.</strong>
           <p>
-            Open the link from your password reset email, or{" "}
-            <Link href="/account?mode=reset">request a fresh reset link</Link>.
+            Open your password reset email link or verify your SMS recovery code.{" "}
+            <Link href="/account?mode=reset">Request password recovery</Link>.
           </p>
         </div>
       )}
@@ -255,23 +312,39 @@ export default function AccountForm({
         <form onSubmit={handleSubmit} className={styles.form} aria-busy={busy}>
           <fieldset disabled={busy} className={styles.fields}>
             {mode !== "password" && (
-              <div className={styles.field}>
-                <label htmlFor="account-email">Email address</label>
-                <input
-                  ref={emailRef}
-                  id="account-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  maxLength={254}
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                />
-              </div>
+              <>
+                {phoneEnabled && (
+                  <div className={styles.field}>
+                    <label htmlFor="account-method">Use email or phone</label>
+                    <select id="account-method" value={method} onChange={(event) => changeMethod(event.target.value === "phone" ? "phone" : "email")}>
+                      <option value="email">Email</option>
+                      <option value="phone">Phone</option>
+                    </select>
+                  </div>
+                )}
+                <div className={styles.field}>
+                  <label htmlFor="account-email">{isPhone ? "Phone number" : "Email address"}</label>
+                  <input
+                    ref={emailRef}
+                    id="account-email"
+                    name={method}
+                    type={isPhone ? "tel" : "email"}
+                    autoComplete={isPhone ? "tel" : "email"}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={isPhone ? 16 : 254}
+                    pattern={isPhone ? "\\+[1-9][0-9]{1,14}" : undefined}
+                    aria-describedby={isPhone ? "phone-guidance" : undefined}
+                    placeholder={isPhone ? "+15555550123" : "you@example.com"}
+                    value={isPhone ? phone : email}
+                    onChange={(event) => isPhone ? setPhone(event.target.value) : setEmail(event.target.value)}
+                    required
+                  />
+                  {isPhone && (
+                    <p id="phone-guidance" className={styles.fieldHint}>Include +country code and digits only. Text-message charges may apply.</p>
+                  )}
+                </div>
+              </>
             )}
             {needsPassword && (
               <div className={styles.field}>
@@ -280,7 +353,7 @@ export default function AccountForm({
                     {mode === "password" ? "New password" : "Password"}
                   </label>
                   {mode === "signin" && (
-                    <Link href="/account?mode=reset">Forgot password?</Link>
+                    <Link href={accountLink("reset")}>Forgot password?</Link>
                   )}
                 </div>
                 <input
@@ -309,6 +382,29 @@ export default function AccountForm({
             {!busy && <span aria-hidden="true">→</span>}
           </Button>
         </form>
+      ) : step === "sms-sent" ? (
+        <form onSubmit={verifyPhone} className={styles.form} aria-busy={busy}>
+          <p className={styles.emailAddress}>{phone}</p>
+          {message && <p role="status" className={styles.information}>{message}</p>}
+          <fieldset disabled={busy} className={styles.fields}>
+            <div className={styles.field}>
+              <label htmlFor="account-code">SMS confirmation code</label>
+              <input ref={tokenRef} id="account-code" name="token" type="text" inputMode="numeric"
+                autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6}
+                value={token} onChange={(event) => setToken(event.target.value)} required />
+            </div>
+          </fieldset>
+          <RequestFeedback error={error} message="" className={styles.feedback} errorClassName={styles.error} messageClassName={styles.information} />
+          <Button type="submit" disabled={disabled} busy={busy} className={styles.primaryButton}>
+            {busy ? "Verifying code…" : "Verify phone number"}
+          </Button>
+          <Button type="button" className={styles.secondaryButton} disabled={disabled} onClick={sendAgain}>
+            {busy ? "Please wait…" : "Send another text message"}
+          </Button>
+          <Button type="button" className={styles.changeEmail} disabled={busy} onClick={changeContact}>
+            Change phone number
+          </Button>
+        </form>
       ) : (
         <div className={styles.emailInstructions} aria-busy={busy}>
           <p className={styles.emailAddress}>{email}</p>
@@ -323,7 +419,7 @@ export default function AccountForm({
           <Button type="button" className={styles.secondaryButton} disabled={disabled} onClick={sendAgain}>
             {busy ? "Sending email…" : mode === "reset" ? "Send another reset email" : "Resend confirmation email"}
           </Button>
-          <Button type="button" className={styles.changeEmail} disabled={busy} onClick={changeEmail}>
+          <Button type="button" className={styles.changeEmail} disabled={busy} onClick={changeContact}>
             Change email address
           </Button>
         </div>
@@ -331,21 +427,21 @@ export default function AccountForm({
 
       <div className={styles.switchMode}>
         {mode === "signup" ? (
-          <p>Already have an account? <Link href="/account?mode=signin">Sign in</Link></p>
+          <p>Already have an account? <Link href={accountLink("signin")}>Sign in</Link></p>
         ) : mode === "signin" ? (
           <>
-            <p>New to Timeline? <Link href="/account?mode=signup">Create an account</Link></p>
-            <Link href="/account?mode=resend" className={styles.confirmationLink}>
-              Resend a confirmation email
+            <p>New to Timeline? <Link href={accountLink("signup")}>Create an account</Link></p>
+            <Link href={accountLink("resend")} className={styles.confirmationLink}>
+              {isPhone ? "Request a confirmation text" : "Resend a confirmation email"}
             </Link>
           </>
         ) : (
-          <p><Link href="/account?mode=signin">Back to sign in</Link></p>
+          <p><Link href={accountLink("signin")}>Back to sign in</Link></p>
         )}
       </div>
       {mode === "signup" && (
         <p className={styles.cardNote}>
-          Next, confirm your email. Then start your first project, with space for
+          Next, confirm your {isPhone ? "phone number" : "email"}. Then start your first project, with space for
           as many people or characters as your story needs.
         </p>
       )}

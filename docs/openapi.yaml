@@ -208,21 +208,35 @@ components:
             - kind
           additionalProperties: false
     Credentials:
-      type: object
-      properties:
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
-        password:
-          type: string
-          minLength: 1
-          maxLength: 128
-      required:
-        - email
-        - password
-      additionalProperties: false
+      anyOf:
+        - type: object
+          properties:
+            email:
+              type: string
+              maxLength: 254
+              format: email
+              pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+            password:
+              type: string
+              minLength: 1
+              maxLength: 128
+          required:
+            - email
+            - password
+          additionalProperties: false
+        - type: object
+          properties:
+            phone:
+              type: string
+              pattern: ^\+[1-9]\d{1,14}$
+            password:
+              type: string
+              minLength: 1
+              maxLength: 128
+          required:
+            - phone
+            - password
+          additionalProperties: false
     EmailInput:
       type: object
       properties:
@@ -243,6 +257,39 @@ components:
           maxLength: 128
       required:
         - password
+      additionalProperties: false
+    AccountContact:
+      anyOf:
+        - type: object
+          properties:
+            email:
+              type: string
+              maxLength: 254
+              format: email
+              pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+          required:
+            - email
+          additionalProperties: false
+        - type: object
+          properties:
+            phone:
+              type: string
+              pattern: ^\+[1-9]\d{1,14}$
+          required:
+            - phone
+          additionalProperties: false
+    PhoneVerification:
+      type: object
+      properties:
+        phone:
+          type: string
+          pattern: ^\+[1-9]\d{1,14}$
+        token:
+          type: string
+          pattern: ^\d{6}$
+      required:
+        - phone
+        - token
       additionalProperties: false
     ProjectInput:
       type: object
@@ -576,6 +623,8 @@ components:
                   format: uuid
                   pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
                 email:
+                  type: string
+                phone:
                   type: string
               required:
                 - id
@@ -961,9 +1010,10 @@ paths:
   /api/auth/signup:
     post:
       operationId: signup
-      summary: Create account and request email confirmation
+      summary: Create email/password or phone/password account and request confirmation
       description: Requires 12–128 password characters; successful signup does not
-        establish verified access.
+        establish verified access. Phone operations require PHONE_AUTH_ENABLED
+        and a configured SMS provider.
       security: []
       parameters:
         - &a1
@@ -1008,7 +1058,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1020,7 +1070,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
-          description: Provider account/email rate limit.
+          description: Provider account/email/SMS rate limit.
           content:
             application/json:
               schema:
@@ -1040,7 +1090,8 @@ paths:
   /api/auth/signin:
     post:
       operationId: signin
-      summary: Sign in using email/password; set server session cookies
+      summary: Sign in using email/password or phone/password; set server session
+        cookies
       security: []
       parameters:
         - *a1
@@ -1071,7 +1122,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1083,7 +1134,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
-          description: Provider account/email rate limit.
+          description: Provider account/email/SMS rate limit.
           content:
             application/json:
               schema:
@@ -1103,9 +1154,10 @@ paths:
   /api/auth/reset:
     post:
       operationId: reset
-      summary: Request password-recovery email
-      description: Generic eligibility message is not proof of delivery. No automatic
-        resend.
+      summary: Request password-recovery email or SMS code
+      description: Generic eligibility message is not proof of delivery. Phone
+        recovery must not create a new account; verify its SMS code before
+        changing the password. No automatic resend.
       security: []
       parameters:
         - *a1
@@ -1114,7 +1166,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EmailInput"
+              $ref: "#/components/schemas/AccountContact"
       responses:
         "200":
           description: Successful response. A mutation is acknowledged only after this
@@ -1136,7 +1188,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1148,7 +1200,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
-          description: Provider account/email rate limit.
+          description: Provider account/email/SMS rate limit.
           content:
             application/json:
               schema:
@@ -1168,7 +1220,7 @@ paths:
   /api/auth/resend:
     post:
       operationId: resend
-      summary: Request another confirmation email
+      summary: Request another confirmation email or SMS code
       security: []
       parameters:
         - *a1
@@ -1177,7 +1229,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EmailInput"
+              $ref: "#/components/schemas/AccountContact"
       responses:
         "200":
           description: Successful response. A mutation is acknowledged only after this
@@ -1199,7 +1251,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1211,7 +1263,73 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
-          description: Provider account/email rate limit.
+          description: Provider account/email/SMS rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Unexpected failure; no successful save may be inferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Provider unconfigured/unavailable or database/sign-out failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/verify-phone:
+    post:
+      operationId: verifyPhone
+      summary: Verify SMS code and establish a server-only session
+      description: Accepts a six-digit code for signup confirmation or recovery.
+        Requires a provider-confirmed, non-anonymous phone identity. Session
+        credentials are never returned in JSON.
+      security: []
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhoneVerification"
+      responses:
+        "200":
+          description: Successful response. A mutation is acknowledged only after this
+            response validates.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid fields, filters, credentials or provider-rejected account
+            operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Origin rejected, contact unconfirmed or ownership denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: JSON body exceeds 128 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Provider account/email/SMS rate limit.
           content:
             application/json:
               schema:
@@ -1269,7 +1387,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1315,7 +1433,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Message"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1410,7 +1528,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1466,7 +1584,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1534,7 +1652,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1599,7 +1717,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1672,7 +1790,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:
@@ -1805,7 +1923,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: Origin rejected, email unconfirmed or ownership denied.
+          description: Origin rejected, contact unconfirmed or ownership denied.
           content:
             application/json:
               schema:

@@ -21,6 +21,13 @@ These are additions, not replacements of the 831 original audit occurrences.
 Safe-area geometry uses the browser's inset; bottom content clearance is
 composed from shared spacing tokens. The audit now checks five stylesheets.
 
+The optional phone account flow also reuses the account input appearance for
+its email/phone selector. Three additional structural entries record the
+combined `.field input, .field select` selector: `width: 100%`, `min-height:
+47px`, and `border: 1px solid var(--color-compatibility-input-border)`.
+The original historical entries remain unchanged; no new token values or
+breakpoints are introduced.
+
 ## Contract and commands
 
 Run with the repository's Node 24 (native TypeScript stripping, no TS runtime

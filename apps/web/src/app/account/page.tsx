@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AccountForm, { type AccountMode } from "@/features/account/account-form";
 import { Card } from "@/components/ui";
+import { phoneAuthEnabled } from "@/lib/server";
 import styles from "@/features/account/account.module.css";
 
 export const metadata: Metadata = {
@@ -61,8 +62,8 @@ export default async function AccountPage({
             <li>
               <span aria-hidden="true">02</span>
               <div>
-                <strong>A confirmed email</strong>
-                <p>Open the email link to confirm it belongs to you.</p>
+                <strong>A verified account</strong>
+                <p>Confirm your email link or, when available, your SMS code.</p>
               </div>
             </li>
             <li>
@@ -78,7 +79,8 @@ export default async function AccountPage({
           </p>
         </aside>
         <Card className={styles.card} aria-label="Timeline account">
-          <AccountForm key={`${mode}:${notice ?? ""}`} mode={mode} notice={notice} />
+          <AccountForm key={`${mode}:${notice ?? ""}:${query.method ?? ""}`} mode={mode} notice={notice}
+            phoneEnabled={phoneAuthEnabled()} initialMethod={query.method === "phone" ? "phone" : "email"} />
         </Card>
       </div>
       <p className={styles.bottomNote}>

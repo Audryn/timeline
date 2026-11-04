@@ -7,7 +7,7 @@ export const tokens = {
     light: {
       brand: { forest: "#216353", hover: "#184d40", gold: "#9a6b2e" },
       neutral: {
-        paper: "#f6f4ed", ink: "#233c35", muted: "#627269",
+        paper: "#ffffff", ink: "#233c35", muted: "#627269",
         line: "#d9dfd5", surface: "#fffefa", white: "#fff", transparent: "transparent",
       },
       semantic: {

@@ -8,9 +8,12 @@ Every browser API operation uses `packages/shared/client.ts`; schemas are in
 | Flow | Screens / transitions | API operations |
 | --- | --- | --- |
 | First use | Welcome -> Create account -> Check email -> Callback -> Projects | `GET /api/session`; `POST /api/auth/signup`; consuming `GET /api/auth/callback` |
+| Phone first use (enabled installations) | Create account -> Phone + password -> SMS code -> Projects | `GET /api/session`; `POST /api/auth/signup`; `POST /api/auth/verify-phone`; broadcast account change, full navigation |
+| Confirm phone again | Resend form -> Phone -> SMS code -> Projects | explicit `POST /api/auth/resend`; `POST /api/auth/verify-phone` |
 | Confirm email again | Check email / Resend form -> Email instructions | `GET /api/session`; explicit `POST /api/auth/resend` |
-| Sign in | Sign-in form -> Projects | `GET /api/session`; `POST /api/auth/signin`; broadcast account change, full navigation |
+| Sign in | Email/password or phone/password form -> Projects | `GET /api/session`; `POST /api/auth/signin`; broadcast account change, full navigation |
 | Recover password | Reset form -> Email -> Callback -> New password -> Projects | `POST /api/auth/reset`; consuming callback GET; `GET /api/session`; `POST /api/auth/password` |
+| Recover phone password | Reset form -> Phone -> SMS code -> New password -> Projects | `POST /api/auth/reset` without user creation; `POST /api/auth/verify-phone`; full navigation to password mode; `POST /api/auth/password` |
 | Create project | Projects -> Project + first person form -> Empty timeline | `GET /api/projects`; `POST /api/projects`; `GET /api/projects/{id}`; `GET /api/projects/{id}/events` |
 | Switch project | Projects -> Selected project timeline | `GET /api/session`; `GET /api/projects`; `GET /api/projects/{id}`; event list |
 | Add person/character | Project timeline -> Inline person form -> Refreshed timeline | `POST /api/projects/{id}/people`; reload detail and event list |

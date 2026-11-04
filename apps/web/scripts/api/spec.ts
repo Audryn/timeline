@@ -1,14 +1,15 @@
 import { z } from "zod";
 import {
-  civilSchema, credentialsSchema, emailInputSchema, errorSchema, eventDateSchema,
+  accountContactSchema, civilSchema, credentialsSchema, emailInputSchema, errorSchema, eventDateSchema,
   eventInputSchema, eventPageSchema, eventSavedSchema, eventSchema, messageSchema,
-  passwordInputSchema, personInputSchema, personSchema, projectCreatedSchema,
+  passwordInputSchema, phoneVerificationSchema, personInputSchema, personSchema, projectCreatedSchema,
   projectDetailSchema, projectInputSchema, projectsSchema, sessionSchema,
 } from "@timeline/shared";
 
 const schemas = {
   CivilDate: civilSchema, EventDate: eventDateSchema,
   Credentials: credentialsSchema, EmailInput: emailInputSchema, PasswordInput: passwordInputSchema,
+  AccountContact: accountContactSchema, PhoneVerification: phoneVerificationSchema,
   ProjectInput: projectInputSchema, PersonInput: personInputSchema, EventInput: eventInputSchema,
   ProjectCreated: projectCreatedSchema, Person: personSchema, EventSaved: eventSavedSchema,
   Session: sessionSchema, Projects: projectsSchema, ProjectDetail: projectDetailSchema,
@@ -27,11 +28,11 @@ const errors = (codes: number[]) => Object.fromEntries(codes.map(code => [code, 
   description: ({
     400: "Invalid fields, filters, credentials or provider-rejected account operation.",
     401: "A verified signed-in session is required.",
-    403: "Origin rejected, email unconfirmed or ownership denied.",
+    403: "Origin rejected, contact unconfirmed or ownership denied.",
     404: "Project unavailable or account action unknown.",
     409: "Stale version or request identity reused with different content.",
     413: "JSON body exceeds 128 KiB.",
-    429: "Provider account/email rate limit.",
+    429: "Provider account/email/SMS rate limit.",
     500: "Unexpected failure; no successful save may be inferred.",
     503: "Provider unconfigured/unavailable or database/sign-out failed.",
   } as Record<number, string>)[code],
@@ -95,9 +96,9 @@ export function createOpenApiDocument() {
       },
       "/api/auth/signup": {
         post: {
-          ...operation("signup", "Create account and request email confirmation", "Message", {
+          ...operation("signup", "Create email/password or phone/password account and request confirmation", "Message", {
             public: true, write: true, input: "Credentials", codes: [400, 403, 413, 429, 500, 503],
-            description: "Requires 12–128 password characters; successful signup does not establish verified access.",
+            description: "Requires 12–128 password characters; successful signup does not establish verified access. Phone operations require PHONE_AUTH_ENABLED and a configured SMS provider.",
           }),
           requestBody: {
             required: true, content: { "application/json": { schema: {
@@ -107,19 +108,25 @@ export function createOpenApiDocument() {
         },
       },
       "/api/auth/signin": {
-        post: operation("signin", "Sign in using email/password; set server session cookies", "Message", {
+        post: operation("signin", "Sign in using email/password or phone/password; set server session cookies", "Message", {
           public: true, write: true, input: "Credentials", codes: [400, 403, 413, 429, 500, 503],
         }),
       },
       "/api/auth/reset": {
-        post: operation("reset", "Request password-recovery email", "Message", {
-          public: true, write: true, input: "EmailInput", codes: [400, 403, 413, 429, 500, 503],
-          description: "Generic eligibility message is not proof of delivery. No automatic resend.",
+        post: operation("reset", "Request password-recovery email or SMS code", "Message", {
+          public: true, write: true, input: "AccountContact", codes: [400, 403, 413, 429, 500, 503],
+          description: "Generic eligibility message is not proof of delivery. Phone recovery must not create a new account; verify its SMS code before changing the password. No automatic resend.",
         }),
       },
       "/api/auth/resend": {
-        post: operation("resend", "Request another confirmation email", "Message", {
-          public: true, write: true, input: "EmailInput", codes: [400, 403, 413, 429, 500, 503],
+        post: operation("resend", "Request another confirmation email or SMS code", "Message", {
+          public: true, write: true, input: "AccountContact", codes: [400, 403, 413, 429, 500, 503],
+        }),
+      },
+      "/api/auth/verify-phone": {
+        post: operation("verifyPhone", "Verify SMS code and establish a server-only session", "Message", {
+          public: true, write: true, input: "PhoneVerification", codes: [400, 403, 413, 429, 500, 503],
+          description: "Accepts a six-digit code for signup confirmation or recovery. Requires a provider-confirmed, non-anonymous phone identity. Session credentials are never returned in JSON.",
         }),
       },
       "/api/auth/password": {

@@ -174,7 +174,7 @@ export function Workspace({ projectId }: { projectId?: string }) {
   return <>{changingAccount && <p role="status" className={styles.notice}>The account changed. Protecting your draft and reopening the workspace...</p>}<section hidden={changingAccount} className={styles.workspace}>
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}>Your life, in context</p><h1>{detail?.project.name ?? "Your projects"}</h1></div>
-      {session?.user && <div className={styles.account}><span>{session.user.email}</span><Button className={styles.secondary} disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out..." : "Sign out"}</Button></div>}
+      {session?.user && <div className={styles.account}><span>{session.user.email || session.user.phone}</span><Button className={styles.secondary} disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out..." : "Sign out"}</Button></div>}
     </div>
     {error && <div className={styles.error} role="alert">{error} <Button className={styles.textButton} onClick={() => setRefresh((value) => value + 1)}>Retry loading</Button></div>}
     {privacyIssue && <p className={styles.error} role="alert">{privacyIssue}</p>}

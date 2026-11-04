@@ -38,6 +38,7 @@ export function localEnvironment({ lane, providerOrigin }, inherited = process.e
     APP_ORIGIN: localOrigins[lane],
     SUPABASE_URL: providerOrigin ?? "",
     SUPABASE_PUBLISHABLE_KEY: providerOrigin ? "sb_publishable_timeline_local_fixture" : "",
+    PHONE_AUTH_ENABLED: lane === "built" || lane === "browser" ? "true" : "false",
     NEXT_PUBLIC_SUPABASE_URL: "",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",

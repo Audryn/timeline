@@ -18,6 +18,7 @@ It is a starting point for ongoing curation, not a frozen transcript.
 | [User flows](FLOWS.md) | Screen/API map for the web app and future native client |
 | [Design tokens](DESIGN-TOKENS.md) | Shared light/dark palettes, Tailwind integration, exact compatibility values and exhaustive deviation audit |
 | [Native preparation decision](decisions/0002-native-preparation-workspace.md) | Workspace and framework-neutral boundary scope |
+| [Phone account decision](decisions/0003-phone-password-accounts.md) | Optional phone/password signup, SMS confirmation/recovery, and release gates |
 | [Testing plan](testing-plan.md) | Manual cases, local automated checks, coverage gaps, and future release gates |
 | [Testing runbook](testing-runbook.md) | Executable local/provider/deployed commands, safeguards, and troubleshooting |
 | [Project plan](project-plan.md) | Dependency-linked automation milestones and remaining product gates |

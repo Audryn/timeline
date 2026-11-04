@@ -33,7 +33,7 @@ Keep durable guidance there rather than relying on a particular chat session.
 
 This is the first-use implementation, not the finished MVP:
 
-- Welcome, signup, verified-email callback, sign-in, reset-password, and server-only sessions.
+- Welcome, email/password signup and confirmation callback, optional phone/password signup with SMS confirmation, sign-in, password recovery, and server-only sessions.
 - Atomic project + first-person + category creation; multiple projects and additional real/fictional people.
 - Shared events, notes, location text, flexible Gregorian dates, vertical timelines, search, and filters.
 - Account-scoped IndexedDB event drafts with explicit online saves, request replay protection, and stale-edit handling.
@@ -118,6 +118,58 @@ a reachable app address and matching auth settings; production auth needs HTTPS.
 
 The migration enables RLS, grants authenticated read access, and restricts aggregate writes to authenticated ownership-checking RPCs. It does not provision storage buckets or deletion jobs; those belong to later milestones.
 
+### Optional phone/password accounts
+
+Email remains available. Phone accounts are disabled by default and require an
+SMS provider; enabling the app flag alone does not configure or test delivery.
+No new database migration is needed: ownership still uses the verified Supabase
+user ID, not an email address or phone number.
+
+**Supabase Dashboard (dedicated development project):**
+
+1. Open **Authentication > Sign In / Providers > Phone**. Enable Phone and
+   require phone confirmation. Keep the minimum password length at 12.
+2. Configure a supported SMS provider, such as Twilio, using that provider's
+   credentials and sending number/service in the Dashboard only. For a Twilio
+   trial, recipients may need verification in Twilio before texts can be sent.
+   Do not put SMS-provider credentials in source or browser environment values.
+3. Keep SMS OTP length at **6 digits**, set an appropriate expiry, and set Auth
+   rate limits before sending texts. Configure provider spending alerts/budgets
+   and destination restrictions; confirm country-specific sender registration
+   and consent requirements. Resends are explicit, never automatic.
+
+**`apps\web\.env.local`:** preserve existing values and add:
+
+```dotenv
+PHONE_AUTH_ENABLED=true
+```
+
+**PowerShell:** restart your existing development server after this change.
+On `/account`, choose **Phone**, enter `+countrycode` followed by digits only,
+and create a password. Enter the code received by text to finish confirmation
+and open Projects. Later sign-ins use the phone number and password, not a
+fresh SMS code. The resend screen can request a new signup-confirmation code.
+
+For forgotten passwords, choose Phone on the recovery screen, verify the SMS
+code, then choose a new password. Recovery must not create a new user.
+Successful SMS verification establishes a server session, as email recovery
+already does. Never claim delivery or confirmation just because sending was
+requested. An email account and a separately registered phone account are
+different accounts; this feature does not link, merge, or transfer projects.
+
+**Release gates:** real SMS signup, resend, phone/password sign-in, expired/wrong
+codes, rate limits, recovery, and account isolation must be tested against the
+configured provider. Local fixtures do not prove delivery. Phone numbers can
+be lost or reassigned, so SMS-only recovery can expose an old account to a new
+number holder. MFA and a reviewed lost-number recovery policy are required
+before production use; neither is implemented here. CAPTCHA token integration
+is also not implemented: simply enabling Supabase CAPTCHA will block these
+forms rather than protect them transparently. Integrate and verify it before
+public SMS signup. Do not enable test phone numbers/fixed codes in production.
+
+See [Supabase phone/password authentication](https://supabase.com/docs/guides/auth/passwords#with-phone)
+and [phone/SMS setup](https://supabase.com/docs/guides/auth/phone-login).
+
 ## Save and recovery behavior
 
 - Only a server acknowledgment means an event is saved to the account.
@@ -200,6 +252,7 @@ Public/private responses are served through nonce-based CSP with dynamic renderi
 ## Remaining release prerequisites
 
 - Configure and exercise hosted Supabase/email flows with two real test accounts.
+- Before enabling public phone accounts, verify hosted SMS flows, abuse/cost controls, MFA, and a lost/reassigned-number recovery policy.
 - Finish media, stories, PDF, privacy/lifecycle, migration/backup/restore procedures, operational monitoring, and deletion/retention jobs.
 - Validate real iPhone Safari/Android Chrome, accessibility, long recordings, large timelines, and export.
 - Review hosting/provider data handling, privacy/support documents, backups, and costs. This app is not app-managed end-to-end encrypted.

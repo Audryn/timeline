@@ -43,7 +43,7 @@ export const eventSchema = z.object({
 });
 export const sessionSchema = z.object({
   configured: z.boolean(),
-  user: z.object({ id: z.uuid(), email: z.string() }).nullable(),
+  user: z.object({ id: z.uuid(), email: z.string(), phone: z.string().optional() }).nullable(),
 });
 export type Project = z.infer<typeof projectSchema>;
 export type Person = z.infer<typeof personSchema>;

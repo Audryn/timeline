@@ -20,7 +20,7 @@ production URLs. Ordinary local gates include the HTTP contract tests.
 | Event list | Envelope `{events,hasMore}`, offset pagination in fixed 50-row slices. Exactly 50 rows means `hasMore=true` even if there is no next row. |
 | Missing resources | Project detail returns 404; event lookup/unavailable project's event list may return an empty array instead. Ownership-denied RPCs map to 403. |
 | Filters | Repeated person/category query keys; only the literal `undated=false` excludes undated entries. Event lookup validates offset but bypasses remaining filters. |
-| Authentication errors | Sign-in failure is normally 400, not 401. Private missing session is 401; unconfirmed email is 403. |
+| Authentication errors | Sign-in failure is normally 400, not 401. Private missing session is 401; unconfirmed email/phone is 403. Disabled phone operations return 503. |
 | Error payload | `{error:string}` without stable machine-readable code; SQL replay mismatch and stale-version errors both use 409. |
 | Account endpoints | Public auth actions still require exact Origin. Sign-out ignores its body. Unknown actions are rejected after configuration/client setup. |
 | Callback | Token-consuming GET returns 307 to fixed web screens instead of JSON; invalid/expired/provider failure usually redirects with a notice. |
@@ -36,6 +36,19 @@ cross-tab coordination, recovery download/discard, and pending-request identity
 are client responsibilities. None grants ownership or commits canonical records.
 Backend services own verified identity, input validation, queries/error mapping
 and calls to transactional RLS-protected database functions.
+
+## Phone accounts
+
+Signup/sign-in accept exactly `{email,password}` or `{phone,password}`, never
+both identifiers. Reset/resend accept exactly `{email}` or `{phone}`. Phone
+input uses E.164 (`+` and up to 15 digits). `/api/auth/verify-phone` accepts
+`{phone,token}` with six code digits, uses the provider's SMS verification, and
+sets server-only cookies without returning credentials. Phone reset requests
+an OTP with `shouldCreateUser:false`; after verification the existing
+password-change endpoint requires a verified session. `/api/session` adds
+optional `user.phone`, preserving `user.email` (empty for phone-only accounts).
+Phone operations require the server-side feature flag and configured provider;
+see [setup and release gates](../README.md#optional-phonepassword-accounts).
 
 ## Recommended next work
 

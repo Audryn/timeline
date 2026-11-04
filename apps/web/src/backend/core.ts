@@ -1,21 +1,31 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { z } from "zod";
 
 export interface BackendDependencies {
   createClient: () => Promise<SupabaseClient>;
   configured: () => boolean;
   appOrigin: () => string;
+  phoneEnabled: () => boolean;
 }
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+export function hasVerifiedContact(user: User | null): boolean {
+  return Boolean(user && !user.is_anonymous && (
+    (user.email && user.email_confirmed_at) || (user.phone && user.phone_confirmed_at)
+  ));
+}
+
 export async function authenticated(createClient: BackendDependencies["createClient"]) {
   const client = await createClient();
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) throw new ApiError(401, "Sign in to continue. Your local draft has not been submitted.");
-  if (!data.user.email_confirmed_at) throw new ApiError(403, "Confirm your email before continuing.");
+  if (!hasVerifiedContact(data.user)) {
+    throw new ApiError(403, data.user.phone && !data.user.email
+      ? "Confirm your phone number before continuing." : "Confirm your email before continuing.");
+  }
   return { client, user: data.user };
 }
 

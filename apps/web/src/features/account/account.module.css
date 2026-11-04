@@ -192,7 +192,8 @@
   font-size: var(--compatibility-font-size-px10);
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   min-height: 47px;
   padding: var(--compatibility-spacing-10) var(--compatibility-spacing-13);

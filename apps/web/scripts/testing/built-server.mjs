@@ -21,6 +21,18 @@ const user = {
   app_metadata: { provider: "email", providers: ["email"] }, user_metadata: {},
 };
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+const phoneUser = {
+  ...user, id: "10000000-0000-4000-8000-000000000002", email: "", email_confirmed_at: undefined,
+  phone: "15555550123", phone_confirmed_at: "2020-01-01T00:00:00Z",
+  app_metadata: { provider: "phone", providers: ["phone"] },
+};
+const phoneToken = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({
+  sub: phoneUser.id, aud: "authenticated", role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600,
+})}.fixture-phone-signature`;
+const phoneSession = () => ({
+  access_token: phoneToken, token_type: "bearer", expires_in: 3600,
+  refresh_token: "fixture-phone-refresh-token", user: phoneUser,
+});
 const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: owner, aud: "authenticated", role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600 })}.fixture-signature`;
 let unexpected = 0;
 const provider = http.createServer(async (request, response) => {
@@ -29,11 +41,23 @@ const provider = http.createServer(async (request, response) => {
   if (url.pathname === "/__test/state" && request.method === "GET") {
     response.end(JSON.stringify({ unexpected })); return;
   }
+  if (url.pathname === "/auth/v1/user" && request.method === "GET" && request.headers.authorization === `Bearer ${phoneToken}`) {
+    response.end(JSON.stringify(phoneUser)); return;
+  }
+  if (url.pathname === "/rest/v1/projects" && request.method === "GET" && request.headers.authorization === `Bearer ${phoneToken}`) {
+    response.end(JSON.stringify([])); return;
+  }
+  if (url.pathname === "/auth/v1/user" && request.method === "PUT" && request.headers.authorization === `Bearer ${phoneToken}`) {
+    response.end(JSON.stringify(phoneUser)); return;
+  }
   if (url.pathname === "/auth/v1/token" && url.searchParams.get("grant_type") === "password" && request.method === "POST") {
     let raw = "";
     for await (const chunk of request) raw += chunk;
     let payload;
     try { payload = JSON.parse(raw); } catch { payload = null; }
+    if (payload?.phone === "+15555550123" && payload?.password === "fixture-password-long") {
+      response.end(JSON.stringify(phoneSession())); return;
+    }
     if (payload?.email !== user.email || payload?.password !== "fixture-password-long") {
       response.writeHead(400); response.end(JSON.stringify({ code: "invalid_credentials", message: "Invalid login credentials" })); return;
     }
@@ -46,10 +70,22 @@ const provider = http.createServer(async (request, response) => {
   if (url.pathname === "/rest/v1/projects" && request.method === "GET" && request.headers.authorization === `Bearer ${token}`) {
     response.end(JSON.stringify([{ id: project, name: "Synthetic built project", hemisphere: "northern" }])); return;
   }
-  if (["/auth/v1/signup", "/auth/v1/recover", "/auth/v1/resend", "/auth/v1/verify"].includes(url.pathname) && request.method === "POST") {
+  if (["/auth/v1/signup", "/auth/v1/recover", "/auth/v1/resend", "/auth/v1/verify", "/auth/v1/otp"].includes(url.pathname) && request.method === "POST") {
     let raw = "";
     for await (const chunk of request) raw += chunk;
     const payload = JSON.parse(raw);
+    if (payload.phone) {
+      const validPhone = payload.phone === "+15555550123";
+      const validOperation = url.pathname.endsWith("/signup") ? payload.password === "fixture-password-long"
+        : url.pathname.endsWith("/verify") ? payload.type === "sms" && payload.token === "123456"
+        : url.pathname.endsWith("/resend") ? payload.type === "sms"
+        : url.pathname.endsWith("/otp") && payload.create_user === false;
+      if (!validPhone || !validOperation) {
+        response.writeHead(400); response.end(JSON.stringify({ code: "validation_failed", message: "Invalid synthetic phone operation" })); return;
+      }
+      response.end(JSON.stringify(url.pathname.endsWith("/verify") ? phoneSession()
+        : url.pathname.endsWith("/signup") ? { user: { ...phoneUser, phone_confirmed_at: undefined } } : {})); return;
+    }
     if (payload.email === "rate-limit@example.invalid") {
       response.writeHead(429); response.end(JSON.stringify({ code: "over_email_send_rate_limit", message: "Synthetic rate limit" })); return;
     }

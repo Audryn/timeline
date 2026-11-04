@@ -1,5 +1,9 @@
-import { credentialsSchema, emailInputSchema, passwordInputSchema } from "@timeline/shared/contracts";
-import { ApiError, authenticated, body, type BackendDependencies } from "./core";
+import { accountContactSchema, credentialsSchema, passwordInputSchema, phoneVerificationSchema } from "@timeline/shared/contracts";
+import { ApiError, authenticated, body, hasVerifiedContact, type BackendDependencies } from "./core";
+
+function requirePhone(dependencies: BackendDependencies) {
+  if (!dependencies.phoneEnabled()) throw new ApiError(503, "Phone accounts are not enabled on this installation. Use email or contact support.");
+}
 
 export async function session(dependencies: BackendDependencies) {
   if (!dependencies.configured()) return { configured: false, user: null };
@@ -8,7 +12,9 @@ export async function session(dependencies: BackendDependencies) {
   if (error && error.name !== "AuthSessionMissingError" && error.status !== 401 && error.status !== 403) throw error;
   return {
     configured: true,
-    user: data.user?.email_confirmed_at ? { id: data.user.id, email: data.user.email ?? "" } : null,
+    user: !error && data.user && hasVerifiedContact(data.user)
+      ? { id: data.user.id, email: data.user.email ?? "", ...(data.user.phone ? { phone: data.user.phone } : {}) }
+      : null,
   };
 }
 
@@ -16,31 +22,61 @@ export async function accountAction(request: Request, action: string, dependenci
   const client = await dependencies.createClient();
   if (action === "signup" || action === "signin") {
     const input = await body(request, credentialsSchema);
+    const phone = "phone" in input;
+    if (phone) requirePhone(dependencies);
     if (action === "signup" && input.password.length < 12) throw new ApiError(400, "Use a password with at least 12 characters.");
     const result = action === "signup"
-      ? await client.auth.signUp({ ...input, options: { emailRedirectTo: `${dependencies.appOrigin()}/api/auth/callback` } })
+      ? await client.auth.signUp("phone" in input
+        ? { ...input, options: { channel: "sms" } }
+        : { ...input, options: { emailRedirectTo: `${dependencies.appOrigin()}/api/auth/callback` } })
       : await client.auth.signInWithPassword(input);
     if (result.error) {
       if (result.error.status === 429) throw new ApiError(429, "Too many attempts. Please wait before trying again.");
-      throw new ApiError(400, action === "signin" ? "Unable to sign in. Check your email, password, and email confirmation." : "Account setup failed. Please check your details or try signing in.");
+      throw new ApiError(400, action === "signin"
+        ? phone ? "Unable to sign in. Check your phone number, password, and SMS confirmation."
+          : "Unable to sign in. Check your email, password, and email confirmation."
+        : "Account setup failed. Please check your details or try signing in.");
     }
-    if (action === "signup") return { message: "Check your inbox to confirm your email, then sign in." };
-    if (!result.data.user?.email_confirmed_at) throw new ApiError(403, "Confirm your email before signing in.");
+    if (action === "signup") return { message: phone
+      ? "Check your text messages and enter the six-digit code to confirm your phone number."
+      : "Check your inbox to confirm your email, then sign in." };
+    if (!hasVerifiedContact(result.data.user) || !(phone ? result.data.user?.phone_confirmed_at : result.data.user?.email_confirmed_at)) {
+      throw new ApiError(403, phone ? "Confirm your phone number before signing in." : "Confirm your email before signing in.");
+    }
     return { message: "Signed in." };
   }
   if (action === "reset" || action === "resend") {
-    const { email } = await body(request, emailInputSchema);
+    const input = await body(request, accountContactSchema);
+    if ("phone" in input) {
+      requirePhone(dependencies);
+      const result = action === "reset"
+        ? await client.auth.signInWithOtp({ phone: input.phone, options: { shouldCreateUser: false, channel: "sms" } })
+        : await client.auth.resend({ type: "sms", phone: input.phone });
+      if (result.error) throw new ApiError(result.error.status === 429 ? 429 : 400, "The text message could not be sent. Please wait and try again.");
+      return { message: "If eligible, a text message is on its way. Enter its six-digit code." };
+    }
+    const { email } = input;
     const result = action === "reset"
       ? await client.auth.resetPasswordForEmail(email, { redirectTo: `${dependencies.appOrigin()}/api/auth/callback?flow=recovery` })
       : await client.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${dependencies.appOrigin()}/api/auth/callback` } });
     if (result.error) throw new ApiError(result.error.status === 429 ? 429 : 400, "The email could not be sent. Please wait and try again.");
     return { message: "If eligible, an email is on its way. Check your inbox and spam folder." };
   }
+  if (action === "verify-phone") {
+    requirePhone(dependencies);
+    const input = await body(request, phoneVerificationSchema);
+    const { data, error } = await client.auth.verifyOtp({ ...input, type: "sms" });
+    if (error) throw new ApiError(error.status === 429 ? 429 : 400, "The code could not be verified. Check it or request a new text message.");
+    if (!hasVerifiedContact(data.user) || !data.user?.phone_confirmed_at) {
+      throw new ApiError(403, "Confirm your phone number before continuing.");
+    }
+    return { message: "Phone number confirmed." };
+  }
   if (action === "password") {
     const { password } = await body(request, passwordInputSchema);
     await authenticated(dependencies.createClient);
     const { error } = await client.auth.updateUser({ password });
-    if (error) throw new ApiError(400, "Password update failed. Please request a fresh reset link.");
+    if (error) throw new ApiError(400, "Password update failed. Please request fresh password recovery.");
     return { message: "Password updated. You can continue to your projects." };
   }
   if (action === "signout") {

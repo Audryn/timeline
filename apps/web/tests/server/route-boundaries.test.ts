@@ -14,7 +14,7 @@ import { POST as authPOST } from "../../src/app/api/auth/[action]/route";
 import { GET as callbackGET } from "../../src/app/api/auth/callback/route";
 
 type Auth = SupabaseClient["auth"];
-type BoundaryUser = Pick<User, "id" | "email" | "email_confirmed_at">;
+type BoundaryUser = Pick<User, "id" | "email" | "email_confirmed_at" | "phone" | "phone_confirmed_at" | "is_anonymous">;
 type ProviderError = Pick<AuthError, "message" | "name" | "status">;
 type AuthResult = { data: { user: BoundaryUser | null }; error: ProviderError | null };
 type AuthOperation<K extends keyof Auth> =
@@ -45,6 +45,8 @@ const boundary = vi.hoisted(() => {
     getUser: vi.fn<AuthOperation<"getUser">>(),
     signUp: vi.fn<AuthOperation<"signUp">>(),
     signInWithPassword: vi.fn<AuthOperation<"signInWithPassword">>(),
+    signInWithOtp: vi.fn<AuthOperation<"signInWithOtp">>(),
+    updateUser: vi.fn<AuthOperation<"updateUser">>(),
     resetPasswordForEmail: vi.fn<AuthOperation<"resetPasswordForEmail">>(),
     resend: vi.fn<AuthOperation<"resend">>(),
     exchangeCodeForSession: vi.fn<AuthOperation<"exchangeCodeForSession">>(),
@@ -92,6 +94,10 @@ const PROJECT: ProjectInput = {
   hemisphere: "southern",
 };
 const CREDENTIALS = { email: USER.email, password: "fictional-test-password" };
+const PHONE_USER: BoundaryUser = {
+  id: USER.id, phone: "+15555550123", phone_confirmed_at: "2026-01-01T00:00:00Z",
+};
+const PHONE_CREDENTIALS = { phone: PHONE_USER.phone, password: CREDENTIALS.password };
 const PERSON: PersonInput = {
   requestId: "30000000-0000-4000-8000-000000000002",
   name: "  Another character  ", kind: "fictional",
@@ -164,6 +170,7 @@ beforeEach(() => {
   vi.stubEnv("SUPABASE_URL", "https://supabase.example.test");
   vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "fictional-publishable-key");
   vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("PHONE_AUTH_ENABLED", "true");
   boundary.cookies.mockResolvedValue(boundary.jar);
   boundary.jar.getAll.mockReturnValue([]);
   tables = {
@@ -189,7 +196,7 @@ describe("framework-neutral backend with an injected provider", () => {
     const createClient = vi.fn<BackendDependencies["createClient"]>().mockResolvedValue(client);
     return {
       createClient,
-      service: createBackend({ createClient, configured: () => true, appOrigin: () => ORIGIN }),
+      service: createBackend({ createClient, configured: () => true, appOrigin: () => ORIGIN, phoneEnabled: () => true }),
     };
   }
 
@@ -343,6 +350,143 @@ describe("exported routes with real server helpers (not a Next HTTP-context test
     });
     expect(boundary.auth.signUp).toHaveBeenCalledExactlyOnceWith({
       ...CREDENTIALS, options: { emailRedirectTo: `${ORIGIN}/api/auth/callback` },
+    });
+  });
+
+  describe("phone/password accounts with SMS verification", () => {
+    it("requests phone signup confirmation without email redirects and signs in using phone/password", async () => {
+      boundary.auth.signUp.mockResolvedValue({ data: { user: { ...PHONE_USER, phone_confirmed_at: undefined } }, error: null });
+      await expectJson(await account("signup", PHONE_CREDENTIALS), 200, {
+        message: "Check your text messages and enter the six-digit code to confirm your phone number.",
+      });
+      expect(boundary.auth.signUp).toHaveBeenCalledExactlyOnceWith({
+        ...PHONE_CREDENTIALS, options: { channel: "sms" },
+      });
+      boundary.auth.signInWithPassword.mockResolvedValue({ data: { user: PHONE_USER }, error: null });
+      await expectJson(await account("signin", PHONE_CREDENTIALS), 200, { message: "Signed in." });
+      expect(boundary.auth.signInWithPassword).toHaveBeenCalledExactlyOnceWith(PHONE_CREDENTIALS);
+    });
+
+    it.each([
+      { label: "confirmed phone", user: PHONE_USER, confirmed: true },
+      { label: "unconfirmed phone", user: { ...PHONE_USER, phone_confirmed_at: undefined }, confirmed: false },
+      { label: "anonymous phone", user: { ...PHONE_USER, is_anonymous: true }, confirmed: false },
+      { label: "timestamp without phone", user: { ...PHONE_USER, phone: undefined }, confirmed: false },
+    ])("keeps session and private access consistent for $label", async ({ user, confirmed }) => {
+      boundary.auth.getUser.mockResolvedValue({ data: { user }, error: null });
+      await expectJson(await sessionGET(new Request(`${ORIGIN}/api/session`)), 200, {
+        configured: true, user: confirmed ? { id: user.id, email: "", phone: user.phone } : null,
+      });
+      const response = await projectsGET(new Request(`${ORIGIN}/api/projects`));
+      expect(response.status).toBe(confirmed ? 200 : 403);
+      if (!confirmed) expect(boundary.from).not.toHaveBeenCalled();
+    });
+
+    it("does not use a confirmed email to bypass phone sign-in confirmation", async () => {
+      boundary.auth.signInWithPassword.mockResolvedValue({ data: { user: { ...USER, phone: PHONE_USER.phone } }, error: null });
+      await expectJson(await account("signin", PHONE_CREDENTIALS), 403, {
+        error: "Confirm your phone number before signing in.",
+      });
+    });
+
+    it.each([
+      { phone: "5555550123", password: CREDENTIALS.password },
+      { phone: "+01555550123", password: CREDENTIALS.password },
+      { phone: "+1 555 555 0123", password: CREDENTIALS.password },
+      { phone: "+1234567890123456", password: CREDENTIALS.password },
+      { ...PHONE_CREDENTIALS, email: USER.email },
+    ])("rejects invalid or ambiguous phone credentials before signup: %j", async (input) => {
+      expect((await account("signup", input)).status).toBe(400);
+      expect(boundary.auth.signUp).not.toHaveBeenCalled();
+    });
+
+    it("blocks phone operations when SMS is disabled without affecting email signup", async () => {
+      vi.stubEnv("PHONE_AUTH_ENABLED", "false");
+      for (const action of ["signup", "signin", "reset", "resend", "verify-phone"]) {
+        const input = action === "verify-phone" ? { phone: PHONE_USER.phone, token: "123456" }
+          : action === "reset" || action === "resend" ? { phone: PHONE_USER.phone } : PHONE_CREDENTIALS;
+        expect((await account(action, input)).status).toBe(503);
+      }
+      expect(boundary.auth.signUp).not.toHaveBeenCalled();
+      expect(boundary.auth.signInWithPassword).not.toHaveBeenCalled();
+      expect(boundary.auth.signInWithOtp).not.toHaveBeenCalled();
+      expect(boundary.auth.resend).not.toHaveBeenCalled();
+      expect(boundary.auth.verifyOtp).not.toHaveBeenCalled();
+      boundary.auth.signUp.mockResolvedValue({ data: { user: USER }, error: null });
+      expect((await account("signup")).status).toBe(200);
+    });
+
+    it("verifies a six-digit SMS code and preserves server-only cookie flags", async () => {
+      boundary.auth.verifyOtp.mockImplementation(async () => {
+        const options = clientOptions();
+        if (!options.cookies.setAll) throw new Error("Expected cookie writer.");
+        await options.cookies.setAll([{
+          name: "fictional-phone-session", value: "fictional-session-value", options: { path: "/" },
+        }], {});
+        return { data: { user: PHONE_USER }, error: null };
+      });
+      await expectJson(await account("verify-phone", { phone: PHONE_USER.phone, token: "123456" }), 200, {
+        message: "Phone number confirmed.",
+      });
+      expect(boundary.auth.verifyOtp).toHaveBeenCalledExactlyOnceWith({ phone: PHONE_USER.phone, token: "123456", type: "sms" });
+      expect(boundary.jar.set).toHaveBeenCalledWith("fictional-phone-session", "fictional-session-value",
+        { path: "/", httpOnly: true, secure: false, sameSite: "lax" });
+    });
+
+    it.each(["12345", "1234567", "abcdef"])("rejects malformed SMS code %s before verification", async (token) => {
+      expect((await account("verify-phone", { phone: PHONE_USER.phone, token })).status).toBe(400);
+      expect(boundary.auth.verifyOtp).not.toHaveBeenCalled();
+    });
+
+    it("does not accept verification without a confirmed phone identity", async () => {
+      boundary.auth.verifyOtp.mockResolvedValue({ data: { user: USER }, error: null });
+      expect((await account("verify-phone", { phone: PHONE_USER.phone, token: "123456" })).status).toBe(403);
+    });
+
+    it("requests SMS recovery without creating an account and permits a verified phone session to update its password", async () => {
+      boundary.auth.signInWithOtp.mockResolvedValue({ data: { user: null }, error: null });
+      await expectJson(await account("reset", { phone: PHONE_USER.phone }), 200, {
+        message: "If eligible, a text message is on its way. Enter its six-digit code.",
+      });
+      expect(boundary.auth.signInWithOtp).toHaveBeenCalledExactlyOnceWith({
+        phone: PHONE_USER.phone, options: { shouldCreateUser: false, channel: "sms" },
+      });
+      boundary.auth.getUser.mockResolvedValue({ data: { user: PHONE_USER }, error: null });
+      boundary.auth.updateUser.mockResolvedValue({ data: { user: PHONE_USER }, error: null });
+      await expectJson(await account("password", { password: CREDENTIALS.password }), 200, {
+        message: "Password updated. You can continue to your projects.",
+      });
+      expect(boundary.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ password: CREDENTIALS.password });
+    });
+
+    it("resends SMS confirmation through the SMS provider, not email or account creation", async () => {
+      boundary.auth.resend.mockResolvedValue({ data: { user: null }, error: null });
+      expect((await account("resend", { phone: PHONE_USER.phone })).status).toBe(200);
+      expect(boundary.auth.resend).toHaveBeenCalledExactlyOnceWith({ type: "sms", phone: PHONE_USER.phone });
+      expect(boundary.auth.signInWithOtp).not.toHaveBeenCalled();
+    });
+
+    it.each(["signup", "signin", "reset", "resend", "verify-phone"])("keeps %s SMS provider failures explicit and redacted", async (action) => {
+      const failure = failedAuth(429, "Fictional private SMS provider detail");
+      boundary.auth.signUp.mockResolvedValue(failure);
+      boundary.auth.signInWithPassword.mockResolvedValue(failure);
+      boundary.auth.signInWithOtp.mockResolvedValue(failure);
+      boundary.auth.resend.mockResolvedValue(failure);
+      boundary.auth.verifyOtp.mockResolvedValue(failure);
+      const input = action === "verify-phone" ? { phone: PHONE_USER.phone, token: "123456" }
+        : action === "reset" || action === "resend" ? { phone: PHONE_USER.phone } : PHONE_CREDENTIALS;
+      const response = await account(action, input);
+      expect(response.status).toBe(429);
+      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(await response.json()).toEqual({ error: expect.not.stringContaining("private SMS provider detail") });
+    });
+
+    it("rejects a foreign-origin code submission before contacting the provider", async () => {
+      const response = await authPOST(writeRequest("/api/auth/verify-phone",
+        JSON.stringify({ phone: PHONE_USER.phone, token: "123456" }), "https://foreign.example.test"),
+      { params: Promise.resolve({ action: "verify-phone" }) });
+      expect(response.status).toBe(403);
+      expect(boundary.auth.verifyOtp).not.toHaveBeenCalled();
     });
   });
 

@@ -2522,6 +2522,30 @@
     ],
     "src/features/account/account.module.css": [
       {
+        "line": 197,
+        "context": ".field input,\n.field select",
+        "property": "width",
+        "original": "100%",
+        "replacement": "100%",
+        "decision": "structural"
+      },
+      {
+        "line": 198,
+        "context": ".field input,\n.field select",
+        "property": "min-height",
+        "original": "47px",
+        "replacement": "47px",
+        "decision": "structural"
+      },
+      {
+        "line": 200,
+        "context": ".field input,\n.field select",
+        "property": "border",
+        "original": "1px solid var(--color-compatibility-input-border)",
+        "replacement": "1px solid var(--color-compatibility-input-border)",
+        "decision": "structural"
+      },
+      {
         "line": 2,
         "context": ".page",
         "property": "max-width",

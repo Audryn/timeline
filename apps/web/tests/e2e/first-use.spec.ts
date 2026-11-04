@@ -1,6 +1,63 @@
 import { expect, test } from "./fixtures/test";
 import { category, detail, owner, person, project } from "./fixtures/workspace";
 
+test("phone signup verifies SMS before opening projects and phone recovery opens the new-password form", async ({ page }) => {
+  const phone = "+15555550123";
+  let signedIn = false;
+  await page.route("**/api/session", route => route.fulfill({ json: {
+    configured: true, user: signedIn ? { id: owner, email: "", phone } : null,
+  } }));
+  await page.route("**/api/projects", route => route.fulfill({ json: [] }));
+  await page.route("**/api/auth/*", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    const input = route.request().postDataJSON();
+    if (action === "signup" || action === "signin") {
+      expect(input).toEqual({ phone, password: "fictional-password-long" });
+      if (action === "signin") signedIn = true;
+    } else if (action === "verify-phone") {
+      expect(input).toEqual({ phone, token: "123456" });
+      signedIn = true;
+    } else if (action === "reset") {
+      expect(input).toEqual({ phone });
+    } else if (action === "password") {
+      expect(input).toEqual({ password: "replacement-password-long" });
+    } else throw new Error("Unexpected phone account operation.");
+    await route.fulfill({ json: { message: "Synthetic phone operation acknowledged." } });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/account?mode=signup");
+  await page.getByLabel("Use email or phone").selectOption("phone");
+  await page.getByLabel("Phone number").fill(phone);
+  await page.getByLabel("Password", { exact: true }).fill("fictional-password-long");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByLabel("SMS confirmation code")).toBeFocused();
+  await expect(page).toHaveURL(/mode=signup$/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByLabel("SMS confirmation code").fill("123456");
+  await page.getByRole("button", { name: "Verify phone number" }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+  await expect(page.getByText(phone, { exact: true })).toBeVisible();
+
+  signedIn = false;
+  await page.goto("/account?mode=signin&method=phone");
+  await page.getByLabel("Phone number").fill(phone);
+  await page.getByLabel("Password", { exact: true }).fill("fictional-password-long");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+
+  signedIn = false;
+  await page.goto("/account?mode=reset&method=phone");
+  await page.getByLabel("Phone number").fill(phone);
+  await page.getByRole("button", { name: "Send reset text" }).click();
+  await page.getByLabel("SMS confirmation code").fill("123456");
+  await page.getByRole("button", { name: "Verify phone number" }).click();
+  await expect(page).toHaveURL(/\/account\?mode=password$/);
+  await expect(page.getByRole("button", { name: "Save new password" })).toBeEnabled();
+  await page.getByLabel("New password").fill("replacement-password-long");
+  await page.getByRole("button", { name: "Save new password" }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+});
+
 test("unconfigured accounts are honestly blocked, with readable setup steps", async ({ page }) => {
   await page.route("**/api/session", (route) => route.fulfill({ json: { configured: false, user: null } }));
   await page.goto("/");

@@ -6,6 +6,7 @@ test("local fixture identity ignores inherited hosted and malformed provider set
   const inherited = {
     PATH: "preserved",
     APP_ORIGIN: "https://not-timeline.example",
+    PHONE_AUTH_ENABLED: "unexpected",
     SUPABASE_URL: "https://not-a-fixture.example",
     SUPABASE_PUBLISHABLE_KEY: "not-a-fixture-key",
     SUPABASE_SERVICE_ROLE_KEY: "must-not-reach-tests",
@@ -19,7 +20,7 @@ test("local fixture identity ignores inherited hosted and malformed provider set
   const clean = localEnvironment({ lane: "browser" }, {});
   const polluted = localEnvironment({ lane: "browser" }, inherited);
   for (const name of ["APP_ORIGIN", "SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY",
-    "NEXT_PUBLIC_SUPABASE_URL", "NODE_OPTIONS", "TIMELINE_TEST_MODE", "NODE_ENV"]) {
+    "NEXT_PUBLIC_SUPABASE_URL", "NODE_OPTIONS", "TIMELINE_TEST_MODE", "NODE_ENV", "PHONE_AUTH_ENABLED"]) {
     expect(polluted[name]).toBe(clean[name]);
   }
   expect(polluted.HTTPS_PROXY).toBe("");

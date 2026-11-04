@@ -13,6 +13,14 @@ test("axe checks loaded welcome and labeled account form", async ({ page, contex
   await expect(page.getByLabel("Email address")).toHaveAttribute("autocomplete", "email");
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("autocomplete", "new-password");
   await checkAxe(page, testInfo, "account-loaded");
+  await context.route("**/api/auth/signup", route => route.fulfill({ json: { message: "Check your text messages." } }));
+  await page.getByLabel("Use email or phone").selectOption("phone");
+  await page.getByLabel("Phone number").fill("+15555550123");
+  await page.getByLabel("Password", { exact: true }).fill("synthetic quality passphrase");
+  await checkAxe(page, testInfo, "phone-account-loaded");
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByLabel("SMS confirmation code")).toBeFocused();
+  await checkAxe(page, testInfo, "phone-code-entry");
 });
 
 test("keyboard skip link, labeled form and rejected submit retain visible focus", async ({ page, context }, testInfo) => {
@@ -32,6 +40,8 @@ test("keyboard skip link, labeled form and rejected submit retain visible focus"
   await expect(page.getByRole("main")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Back to Timeline", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Use email or phone")).toBeFocused();
   await page.keyboard.press("Tab");
   const email = page.getByLabel("Email address");
   const password = page.getByLabel("Password", { exact: true });

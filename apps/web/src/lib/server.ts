@@ -8,6 +8,9 @@ export { ApiError, body, databaseError } from "@/backend/core";
 export function configured() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY);
 }
+export function phoneAuthEnabled() {
+  return process.env.PHONE_AUTH_ENABLED === "true";
+}
 export function appOrigin() {
   const value = process.env.APP_ORIGIN;
   if (!value) throw new ApiError(503, "Set APP_ORIGIN before using account features.");
@@ -40,7 +43,7 @@ export async function authenticated() {
   return verifyAuthentication(supabase);
 }
 
-export const backend = createBackend({ createClient: supabase, configured, appOrigin });
+export const backend = createBackend({ createClient: supabase, configured, appOrigin, phoneEnabled: phoneAuthEnabled });
 
 export async function api(request: Request, handler: () => Promise<unknown>) {
   try {

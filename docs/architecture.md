@@ -61,6 +61,23 @@ Configuration uses server-side `APP_ORIGIN`, `SUPABASE_URL`, and
 `SUPABASE_PUBLISHABLE_KEY`. Only names/placeholders belong in tracked files.
 Keep URLs/redirects consistent; localhost is always the device opening the link.
 
+Email/password is the default. Optional phone/password accounts are gated by
+server-side `PHONE_AUTH_ENABLED` and require a configured SMS provider with phone
+confirmation enabled. Signup requests a code; `/api/auth/verify-phone` verifies
+it and establishes the same HttpOnly SSR session as email confirmation. Later
+sign-ins use the password. Phone recovery requests an OTP with account creation
+disabled, verifies it, then uses the existing authenticated password-change
+endpoint. All phone API operations fail explicitly while the flag is disabled.
+
+`backend/core.ts` shares the verified-contact predicate with session inspection:
+a non-anonymous user must have an email with `email_confirmed_at`, or a phone
+with `phone_confirmed_at`. Sign-in additionally requires confirmation of the
+chosen identifier. `/api/session` retains `email` for compatibility and adds
+optional `phone`; phone-only accounts do not need a fake email. Ownership and
+draft scope remain user-ID based. No account linking or migration is implicit.
+See [the phone-account decision](decisions/0003-phone-password-accounts.md) for
+the SMS recovery, abuse-control, and production limitations.
+
 ### Ownership and transactional records
 
 Projects belong to one owner. People/categories belong to a project. Event

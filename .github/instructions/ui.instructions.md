@@ -16,7 +16,7 @@ applyTo: "apps/web/src/**/*.tsx,apps/web/src/**/*.css"
 - Use semantic controls, accessible labels/legends, visible keyboard focus,
   readable errors/status, and non-color category cues. Support touch, zoom,
   screen readers, and reduced motion; do not use placeholders as labels.
-- Keep first use short: account -> verified email -> project plus first
+- Keep first use short: account -> verified email or enabled phone -> project plus first
   person -> empty timeline -> first event. Do not require a biography, birth
   date, photo, or additional person just to start.
 - Display real/fictional people as project records, not invited accounts.

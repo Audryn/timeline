@@ -80,6 +80,37 @@ test("every documented operation matches actual Next HTTP responses and error co
       : action === "password" ? { password: "fixture-password-long" } : { email: "fixture@example.invalid" };
     await check(`/api/auth/${action}`, "post", await request.post(`/api/auth/${action}`, { headers: authenticated, data }));
   }
+  const phone = "+15555550123";
+  for (const action of ["signup", "reset", "resend"] as const) {
+    await check(`/api/auth/${action}`, "post", await request.post(`/api/auth/${action}`, {
+      headers, data: action === "signup" ? { phone, password: "fixture-password-long" } : { phone },
+    }));
+  }
+  await check("/api/auth/verify-phone", "post", await request.post("/api/auth/verify-phone", {
+    headers, data: { phone, token: "invalid" },
+  }), 400);
+  const phoneVerification = await request.post("/api/auth/verify-phone", {
+    headers, data: { phone, token: "123456" },
+  });
+  await check("/api/auth/verify-phone", "post", phoneVerification);
+  const phoneCookies = phoneVerification.headersArray().filter(h => h.name.toLowerCase() === "set-cookie");
+  expect(phoneCookies.length).toBeGreaterThan(0);
+  for (const cookie of phoneCookies) {
+    expect(cookie.value).toContain("HttpOnly");
+    expect(cookie.value).toContain("Secure");
+    expect(cookie.value.toLowerCase()).toContain("samesite=lax");
+  }
+  const phoneHeaders = { ...headers, Cookie: phoneCookies.map(h => h.value.split(";")[0]).join("; ") };
+  const phoneSession = await request.get("/api/session", { headers: phoneHeaders });
+  await check("/api/session", "get", phoneSession);
+  expect(await phoneSession.json()).toMatchObject({ user: { email: "", phone: "15555550123" } });
+  await check("/api/projects", "get", await request.get("/api/projects", { headers: phoneHeaders }));
+  await check("/api/auth/password", "post", await request.post("/api/auth/password", {
+    headers: phoneHeaders, data: { password: "fixture-password-long" },
+  }));
+  await check("/api/auth/signin", "post", await request.post("/api/auth/signin", {
+    headers, data: { phone, password: "fixture-password-long" },
+  }));
   const callback = await request.get("/api/auth/callback?token_hash=synthetic-fixture-token&type=recovery", { maxRedirects: 0 });
   await check("/api/auth/callback", "get", callback, 307);
   expect(callback.headers().location).toBe(`${origin}/account?mode=password`);
