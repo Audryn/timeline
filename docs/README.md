@@ -12,6 +12,7 @@ It is a starting point for ongoing curation, not a frozen transcript.
 | [Project instructions](../.github/copilot-instructions.md) | Short, durable repository-wide working rules |
 | [Scoped instructions](../.github/instructions) | UI, backend/domain, and test rules for matching files |
 | [README.md](../README.md) | Setup, commands, implementation milestone, and operational caveats |
+| [Local startup guide](local-startup.md) | Windows startup/shutdown with hosted Supabase or Docker/local Supabase, configuration, and troubleshooting |
 | [Product brief](product.md) | Intended experience, vocabulary, scope, and constraints |
 | [Architecture](architecture.md) | Current mechanisms, code map, and design invariants |
 | [Proposed data model v3](design/Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29%20v3.md) and [SQL draft](design/timeline_schema_v3.sql) | Proposed sharing, contribution, transfer, and date structures; not implemented behavior or a deployable migration |

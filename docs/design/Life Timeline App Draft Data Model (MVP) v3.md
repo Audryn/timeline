@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026
+Draft v3, November 6, 2026; updated November 16, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -10,7 +10,14 @@ Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28
 This document consolidates the agreed product direction. The companion SQL is
 a **structural design draft**, not a migration, runnable application backend,
 or completed authorization implementation. It deliberately grants no application
-access. Do not paste it into an existing development or production database.
+access. It also predates the project collaboration decisions below: project
+membership, author-approved participant access, shared review queues, and
+removed co-authors' retained authorship history still need a structural redesign.
+Its single-reviewer fields do not model those rules.
+The explicit multi-timeline event placements now required for MVP are also not
+represented by its timeline-local event structure.
+Organizing events containing related entries also need structural design.
+Do not paste it into an existing development or production database.
 
 The running app still uses project-owned data and project-scoped drafts.
 Implementing this direction will require an architectural decision replacing
@@ -19,7 +26,11 @@ and transactional functions. Neither the original proposal nor application code
 is changed by these reference files.
 
 Events are the core content. A timeline is a saved collection/view about one
-subject; projects are optional folders. Real and fictional people are supported.
+subject; projects provide collaboration spaces as well as optional organization.
+Real and fictional people are supported.
+Explicit placement of one event on multiple subjects' timelines within one
+account is MVP scope, especially for family histories. It is not automatic
+sharing or a request for cross-account synchronization.
 Story plotting, fictional calendars, comparisons, and legacy activation remain
 outside this implementation slice. The app remains online-first with recoverable
 browser drafts, not an offline replica or a custom two-way sync engine.
@@ -35,19 +46,92 @@ browser drafts, not an offline replica or a custom two-way sync engine.
 - Each timeline-local content item records its original creator separately from
   its current editing authority. The timeline records its current owner.
   Attribution does not disappear when editing authority changes.
-- By default, the creator reviews proposed changes to an existing item. After
-  explicit transfer, the recipient has editing authority over transferred items,
-  subject only to closing the pre-transfer reviews described below.
-- Person, event, note, and media records are timeline-local representations.
-  Sharing exposes the same representation to authorized users; acceptance updates
-  both users' views of that timeline, not other unshared timelines.
+- Outside project collaboration, the creator reviews proposed changes to an
+  existing item by default. Within a project, authorized co-authors can edit
+  shared content directly and review contributor proposals regardless of who
+  originated it. Neither co-authorship nor approval transfers timeline ownership.
+  Explicit transfer gives the recipient editing authority over transferred items,
+  subject to closing the pre-transfer reviews described below.
+- An event can have explicit placements on multiple subjects' timelines within
+  one account. Those placements refer to one event, not independent event copies;
+  shared-fact edits update every placement. Person involvement alone creates no
+  placement or audience permission. Ordinary sharing exposes permitted content
+  to authorized users, not unrelated timelines or private layers.
 - Related copies have stable provenance identifiers and snapshot versions, not
   an implicit live synchronization link. Place/topic data must also remain
   independent where an archive or transfer requires it.
 
+### One event on multiple timelines (MVP)
+
+Keep **People involved** separate from **Show on timelines** in the event editor.
+For example, while recording a birth on a parent's timeline, adding the child
+as an involved person makes the child's existing timeline available as an
+unchecked placement option. The user can explicitly select it during creation
+or a later edit; adding a person does not open a mandatory confirmation dialog.
+Do not silently create a timeline for an involved person who has none.
+
+The current timeline is selected for initial event creation. Additional
+placements require explicit selection, even when both timelines belong to the
+same account. A birth-oriented prompt may make the option more prominent without
+selecting it automatically. This behavior applies to events generally, not
+only births.
+
+Saving commits the event and the selected placement changes together. No extra
+save-time placement prompt is needed unless the change would expand the audience.
+Different timelines in the same account may have different sharing audiences:
+any expansion needs explicit confirmation and applicable author permissions.
+Confirmation cannot substitute for authority the user does not have.
+
+Show a placed event once in a combined timeline view. Shared-fact edits affect
+every placement; removing one placement does not delete the event from the
+others. Placement does not transfer ownership or independently grant editing
+rights. The UI must distinguish removing a placement from deleting the event.
+
+Personal recollections, medical details, notes, and attachments are not
+automatically exposed through another placement. A child's birth appearing on
+their timeline must not reveal a parent's private childbirth account.
+The shared event/placement schema, audience checks, and private-detail boundaries
+must be designed and tested before enabling this feature. Cross-account event
+placement is not part of this agreement; transfers and archives still require
+their own explicit rules.
+
+### Organizing events and their entries (MVP)
+
+An event can organize related events and memories added at creation or later.
+For example:
+
+- A five-week Trip to India in Spring 2001 can contain town visits, sights,
+  train journeys, wedding celebrations, and individual memories.
+- A Job with a month/year span can contain promotions, title changes, and
+  work-location changes.
+
+Each contained entry is an event in its own right, with its own type, people,
+place, additional-details text, and optional date information. Preserve uncertain
+or unknown dates: "during the India trip" supplies context, not an invented
+occurrence date or a claim that the entry lasted for the entire trip.
+
+Offer "Add an event or memory within this..." from the organizing event, and
+allow an existing entry to be associated with an organizing event when editing.
+Its detail view brings permitted contained entries together. Open text elaborates
+on the organizing event itself; a contained Memory is a separate entry.
+
+This is a narrow organizing relationship, not general-purpose event linking.
+A job change and a residence change can be entered separately without an
+explicit link between them. Arbitrary event-to-event relationships are outside
+MVP scope. Organizing an entry is also distinct from placing one event on
+multiple subjects' timelines; neither relationship implies the other.
+
+Containment does not grant visibility, transfer ownership, or automatically
+share private memories. Parent/entry visibility and derived counts must respect
+audience boundaries. Hierarchy depth, timeline expansion/collapse, ordering,
+and behavior when moving or removing an organizing event remain design details,
+not silently chosen defaults.
+
 ## 2. Sharing is live access, not ownership
 
-The action "Share this timeline" offers:
+### Direct timeline sharing
+
+Outside a project, the action "Share this timeline" offers:
 
 | Choice | Recipient's rights |
 | --- | --- |
@@ -72,9 +156,10 @@ respect the effective audience; authorization is not just a UI filter.
 
 Private content remains accessible to its creator/current independent editing
 owner and any explicitly authorized recipients, subject to their sharing role.
-Visibility permission alone does not grant direct editing authority. Timeline ownership,
-View and Contribute, and account linking do not by themselves reveal another
-creator's private layers.
+For private items, visibility permission alone does not grant direct editing
+authority; the project co-author view-implies-edit rule below applies to shared
+content only. Timeline ownership, View and Contribute, project co-authorship,
+and account linking do not by themselves reveal another creator's private layers.
 
 Contributors may keep their own private additions on the shared timeline and
 edit those additions directly. The timeline owner and other recipients cannot
@@ -91,21 +176,96 @@ This supersedes v2's copy-on-disconnect rule for ordinary sharing.
 Recipients cannot share someone else's material onward in the MVP. A future
 onward-sharing feature requires the original author's explicit permission.
 Granting access to another creator's contribution must not bypass that creator's
-permission; the exact workflow for mixed-authorship audience changes is still
-open and must be settled before enabling those changes.
+permission. Project participant access follows the explicit approval rules below;
+external onward sharing and transfer/archive consent remain separate workflows.
+
+### Project collaboration and roles
+
+Use a project to collaborate with multiple participants or grant co-authorship.
+Adding a timeline to a project does not transfer its ownership. Direct sharing,
+including trusted contributions, remains available outside a project.
+The project owner manages membership and assigns participant roles.
+Roles and author-to-participant permissions apply across all timelines within
+the project, not separately per timeline. This project-wide scope does not
+override private-item protection or another author's required audience approval.
+
+| Role | Rights within authorized content |
+| --- | --- |
+| Owner | Retains timeline ownership and access to shared contributions submitted to that timeline. This access cannot be disabled by the author; creator-only private items remain protected. |
+| Co-Author | Full direct editing rights over shared content they are authorized to see, without approval, regardless of who originated it. This is not timeline ownership or automatic membership-management authority. |
+| Contributor | Proposes shared additions and edits for approval by the owner or an authorized co-author. Can keep creator-only private items separately. |
+| Reviewer | Reads permitted content only; cannot propose or directly edit content. |
+
+Authorship attribution and timeline ownership remain distinct. A co-author's
+direct edits must still use version checks and revision history; "no approval"
+does not permit silent overwrites of concurrent changes.
+
+### Author-approved participant access
+
+Each author controls whether other project participants can view their shared
+contributions. For a Contributor, the author can also allow or deny suggestions
+on that author's work. Such permission cannot elevate the participant's role:
+a Reviewer never gains suggestion rights, and a participant who cannot view an
+item cannot suggest changes to it.
+
+For a Co-Author, permission to view shared content includes direct editing;
+there is no separate read-only or suggestion-only restriction on that content.
+An author can withhold access, but cannot grant a co-author viewing without the
+associated editing rights. Shared submissions remain visible to the timeline
+owner; creator-only private items remain protected from both owner and co-authors.
+Explicitly sharing a private item is not an implicit conversion to shared
+project content or an automatic grant of direct co-author editing rights.
+
+When participants join, notify affected authors and request approval before
+exposing their existing contributions. Do not use the earlier proposed wording
+that contributions are shared with newcomers by default. Approval by the
+timeline owner does not substitute for another author's audience permission.
+
+A new co-author can activate with partial access while approvals are pending.
+For example, the new co-author can edit the owner's authorized shared content
+immediately, while another author's work stays hidden until that author approves.
+Approval then includes direct editing under the co-author role.
+
+Audience controls must cover accepted content, pending proposals, before/after
+history, attached media, and derived results. Editing or approving another
+author's work must not relabel its authorship to bypass their audience controls.
+How permissions apply to jointly edited material, later revocation, and future
+contributions must be specified in the remaining workflows below.
+
+### Removing a project co-author
+
+The project owner can remove a co-author. Removal revokes project access,
+including direct editing, proposal review, and all live access to other authors'
+content. It does not retract accepted contributions from the project.
+
+The removed co-author retains **read-only access to their own authored revisions,
+with export available**. This retained view is limited to material they authored
+before removal; it provides no access to other authors' revisions or future
+project changes, including later changes to items they originally created.
+It is not a continuing project membership, a live item view, or an editable
+personal copy.
+
+Retained history/export must contain only material attributable to that
+co-author. A whole-record revision snapshot or diff context may contain another
+author's work and is not automatically eligible for retention. Authorship
+tracking and export structure still need design; do not infer "my authored
+revision" means "everything in a record I once edited." Existing independent
+personal source items are not made read-only by removal from this project.
+Whether the same retained-access rule applies when Contributors or Reviewers
+are removed remains to be decided.
 
 ## 3. Contributions, review, and trust
 
 ### Targets and reviewer
 
-Proposals have a stable ID, recipient timeline, contributor, reviewer, typed
-target, submitted payload, and base version where they change existing content.
+Proposals have a stable ID, recipient timeline, contributor, authorized review
+audience, typed target, submitted payload, and base version where they change existing content.
 Targets include Person, event, note, and media, not just events.
 
-- Shared additions are reviewed for inclusion by the timeline owner. New content
+- Outside a project, shared additions are reviewed by the timeline owner. New content
   retains the contributor's original attribution. A contributor's own private
   additions do not enter another user's approval queue.
-- Changes/replacements to accepted content are reviewed by that item's creator,
+- Outside a project, changes/replacements are reviewed by that item's creator,
   or its editing authority after the transfer exception has finished.
 - Notes expressing a different recollection can be separate additions rather
   than an overwrite of someone else's words.
@@ -114,6 +274,20 @@ Targets include Person, event, note, and media, not just events.
   or independent copy.
 - Private content is not available as a proposal target to a recipient without
   explicit authority to see it.
+
+In a project, contributor proposals go to a **shared review queue for the owner
+and all authorized co-authors**, regardless of who originated the target content.
+Any one authorized owner or co-author can approve or decline; unanimity and a
+separate original-creator approval are not required. The role and access check includes
+the target, submitted payload, and before/after context. A co-author cannot learn
+about hidden work through a proposal, notification, or queue count.
+The read-only Reviewer role is not a proposal-approval role.
+
+Once resolved, a proposal closes for everyone. Decisions must serialize so
+concurrent reviewers cannot apply it twice or overwrite its terminal outcome.
+The deciding actor is recorded separately from original authorship and the set
+of people eligible to review. Loss of reviewer access while a proposal is
+pending remains a workflow decision; approval is not self-review.
 
 Submitting a proposal does **not** itself modify accepted content; manual or
 trusted automatic acceptance applies the change atomically. While pending, the contributor
@@ -139,14 +313,42 @@ Cancellation is allowed while pending. If acceptance, including auto-accept,
 wins a simultaneous race, cancellation cannot roll it back. The database must
 serialize the decision and return the actual outcome.
 
-`auto_accept` is an explicit trust setting made by the **reviewer for one
+### Trust and clearing a contributor's backlog
+
+Outside a project, `auto_accept` is an explicit trust setting made by the **reviewer for one
 contributor in one timeline**. It automatically accepts new shared additions
 and proposed edits/replacements that reviewer is authorized to decide. For new
 shared additions, the timeline owner's trust supplies inclusion approval.
-A sharer cannot auto-accept edits for a different creator. Validation, audience
+A direct sharer cannot auto-accept edits for a different creator. Validation, audience
 permissions, expected versions where applicable, and audit history still apply;
 auto-accept is not unrestricted direct write access. A contributor's own private
 additions need no inclusion approval and do not depend on this trust setting.
+Within a project, the **project owner manages trust for each contributor across
+all project timelines**. Co-authors may manually approve or decline authorized
+proposals, but do not independently configure project-wide trust.
+The owner's "Always accept contributions from this person" action enables
+automatic acceptance of that contributor's new shared additions and proposed
+edits/replacements throughout the project.
+
+Offer an explicit option alongside that action to **also accept all eligible
+pending proposals from this person across the project**. Enabling future trust
+alone does not silently accept the backlog. The optional bulk action covers
+pending proposals across project timelines, not only the currently displayed
+page, and does not include unrelated projects or direct shares.
+
+Trust and bulk acceptance do not grant content access or bypass author audience
+permissions, private-item protection, validation, expected versions, or the
+no-self-approval rule. Recheck the owner's authority, applicable trust, and each
+proposal's state when applying acceptance. Each proposal resolves atomically
+against concurrent approval, decline, or cancellation; the first valid committed
+decision wins. One accepted proposal may make another proposal against the same
+item version outdated.
+
+The bulk result must distinguish accepted proposals from outdated, already
+resolved, or otherwise unapplied proposals without exposing restricted context.
+Do not claim the entire backlog was accepted if some proposals could not be
+applied. Detailed batch confirmation, progress, and failure/retry UX still need
+design. Accepted contributions remain accepted if trust is later disabled.
 
 Ending a share does not silently discard pending submissions. The reviewer may
 resolve the submitted payload with restricted review context; the contributor
@@ -184,7 +386,9 @@ The archive has a narrow exception to immutability:
    reviewers and restricted pre-transfer context.
 2. Lock each affected live item until all its captured reviews are closed.
    The new owner can edit unaffected items immediately.
-3. Original creators decide those captured reviews. Accepted changes apply to
+3. For direct-sharing reviews, original creators decide those captured reviews.
+   The captured-review audience for a project shared queue remains to be designed.
+   Accepted changes apply to
    both transferred content and the sender's corresponding archive content,
    wherever the authorized content exists.
 4. The new owner can explicitly cancel abandoned captured requests, without
@@ -229,6 +433,41 @@ residence and any ambiguous order before creating a span. Jobs and schooling
 use the same endpoint model; starting a later job/residence never silently ends
 an earlier one, because concurrent jobs/homes and missing events are possible.
 
+### Text-first date entry and explicit interpretation
+
+Use one primary **When?** text field for a date or span, with a readable
+interpretation shown underneath before saving. Parse a documented set of common
+formats deterministically, not through AI or permissive platform date guessing.
+Examples include "Spring 2021", "2/7/2007", and "March 2009 - Jan 2010".
+The month-to-month example preserves month precision independently at each end;
+it does not store invented first/last occurrence days.
+
+Numeric date order cannot be inferred reliably from location, browser locale,
+or the entry alone. Offer an optional explicit date-order preference in settings
+or at the first ambiguous entry. Without that preference, ask whether "2/7/2007"
+means 7 February or July 2, using month names in the interpretation. Provide an
+explicit "Remember this date order" option rather than silently saving a guess.
+An unambiguous ISO-style date such as "2007-02-07" means 7 February 2007.
+
+**Never infer a century or apply a two-digit-year cutoff.** For "12.11.67",
+resolve day/month order if necessary and require the user to specify the year
+explicitly. Do not assume 1967 or 2067, particularly for historical fiction.
+If the intended year is 67 CE, the user must be able to specify that explicitly
+within the supported calendar model; a short year is not automatically modern.
+Date-order preferences do not authorize century guessing.
+
+Preserve the entered wording separately from its confirmed structured meaning.
+Changing preferences never reinterprets saved dates. Keep a **Date options**
+control for uncertainty, independent endpoint precision, unknown/ongoing ends,
+and other cases not clearly expressed by shorthand. Seasonal interpretation
+still follows the confirmed rules below, not an inferred hemisphere.
+
+If parsing fails or remains ambiguous, explain the issue and let the user
+clarify or explicitly retain unplaced wording. Never silently accept a guessed
+date or present unplaced text as a successfully parsed date. Exact accepted
+syntax, supported input languages, and early-year/era presentation remain to
+be specified; this does not add fictional calendars or expand calendar limits.
+
 ### Seasonal wording and preference
 
 User preference provides a default of northern or southern seasons, or no
@@ -251,6 +490,27 @@ are deferred; their independent epochs are not automatically comparable.
 Approximate ages must respect uncertain birth dates; no exact birth day is
 invented and age is never stored.
 
+### Birthday age markers on the timeline
+
+When the timeline subject has a specified exact birthdate (day, month, and
+full year), show birthday markers along the timeline's date line, marking each
+new age in completed years. These are derived display markers, not automatically
+created birthday events. Age is calculated from civil dates, not stored or
+derived from elapsed milliseconds/browser time zones.
+
+The primary age display is at birthdays, not a mandatory age label beside every
+event. Where an event's age is displayed, show a single age only when the
+available date information establishes it. Otherwise show the possible age
+range when bounds are available; do not calculate a definitive age from an
+uncertain event's earliest placement anchor. Unplaced dates do not supply a
+calculable age. Do not invent a birthday for a partial or uncertain birthdate.
+
+Only derive markers or ages from birthdate information the viewer is authorized
+to see; hiding the birthdate must not leak it through age markers.
+February 29 anniversary handling, marker density at different zoom levels,
+pre-birth/post-death display, and labeling combined multi-person views remain
+presentation/behavior decisions before implementation.
+
 ## 6. Event forms and topics
 
 App-supplied default event types:
@@ -264,6 +524,13 @@ and switch without loss of content or date meaning.
 Types supply defaults, relevant fields, and prompts; they do not dictate
 precision or prohibit spans. Users do not build custom event types in the MVP.
 Detailed type-specific fields and screens will be supplied later.
+
+Every event type and guided template must include an open-ended text field for
+**additional details or memories**, alongside any structured fields. Users can
+record their own wording without fitting it into type-specific prompts.
+Changing an event's type or template must preserve this text. The field follows
+the event's applicable visibility permissions; entering a personal recollection
+does not automatically make it private.
 
 Separately, optional multiple topics/categories organize and filter an event:
 Work, Family, Travel, etc. Users can add these labels. For example, a Residence
@@ -282,6 +549,24 @@ The SQL uses a dedicated `timeline_draft` schema so it cannot be confused with
 the running app's `public` tables. It assumes Supabase authentication tables and
 roles exist. Schema-only validation may use synthetic equivalents in a separate
 in-memory database; that is not provider acceptance.
+
+The table map below describes the **existing SQL draft**, not a complete model
+of the newly agreed collaboration rules. The draft's `project` is still an
+organizational record; it has no participant membership/role or author-audience
+permission structures. Its required `contribution.reviewer_user_id` represents
+the earlier single-reviewer design, not the shared queue. Those structures and
+the project trust/transfer implications must be redesigned before implementation.
+The SQL's item-level creator/editor IDs and whole before/after values also do not
+by themselves provide the authorship-specific retained history required when a
+co-author is removed.
+The timeline-local `event` and `event_person` structures do not implement explicit
+placements of one event across timelines. Participant links must not be used as
+implicit placements or sharing grants. A shared event identity and placement
+model, including date/detail/link ownership and audience enforcement, still
+need structural design.
+The SQL also has no event-to-organizing-event relationship. Its note/media
+attachments do not substitute for separately typed events or memories within a
+Trip or Job.
 
 | Structure | Purpose |
 | --- | --- |
@@ -313,7 +598,15 @@ fail-closed scaffolding, not completed security.
 ## 8. Required transactional and privacy implementation
 
 - Authenticated identity comes from the server/provider, never submitted owner
-  or reviewer IDs. Derive authorization and reviewer using authoritative rows.
+  or reviewer IDs. Derive authorization and eligible reviewers using authoritative rows.
+- Enforce project roles together with author-approved audience access. A co-author
+  can directly edit authorized shared work, not private or unapproved hidden work.
+  Recheck role/access and proposal state atomically when deciding a proposal;
+  membership alone is not sufficient permission. Preserve original attribution.
+- On co-author removal, revoke live project access while preserving a separate
+  read-only, exportable view of only their authored revisions. Retained history
+  must not expose other authors' material through snapshots, diff context, media,
+  or newly fetched project data.
 - RLS must protect accepted content, private layers, Person/place metadata,
   proposal previews, before/after audit data, notifications, and archive assets.
 - Private visibility requires explicit per-item/per-recipient authorization;
@@ -364,21 +657,48 @@ trigger, or partial account-transfer implementation is included in the SQL.
 These are intentionally not silently filled in by the SQL:
 
 1. Type-specific forms/prompts, starter topics, sharing/transfer confirmation UX.
-2. Mixed-authorship onward/audience permissions and any creator-originated edits
-   that would alter another owner's already accepted content. Preserve the
-   earlier requirement for recipient approval; a shared view is not permission
-   to silently overwrite someone else's words.
-3. Existing third-party shares on transfer, repeated transfers during pending
-   review, and pending additions with excluded parents. Require explicit
-   resolution; do not create unsupported cross-archive propagation.
-4. Birth-date edits/account-link consent presentation and retaining another
+2. Adding/removing timelines from a project: permission checks, existing content,
+   pending reviews, and transition into/out of project-wide roles and author
+   permissions. The owner manages membership/roles; these permissions apply across
+   all project timelines. Co-authorship is not authority to transfer ownership.
+3. Audience-permission lifecycle: what an approval covers for future contributions,
+   how later revocation works for accepted and jointly edited content, and how
+   owner exclusions interact with author permissions without widening access.
+   Specify role changes, including promotion from Contributor to Co-Author, which
+   changes editing rights even when the person could already view the material.
+   Define authorship-specific retained-history/export structures for removed
+   co-authors and whether retention also applies to removed Contributors/Reviewers.
+4. Shared review lifecycle: eligibility changes while pending, contributors' edits
+   to their own accepted contributions, and what happens if no authorized reviewer
+   remains. Define confirmation, progress, and failure/retry UX for the optional
+   project-wide acceptance of a trusted contributor's backlog. Owner-managed
+   project trust and approval/decline by any authorized owner/co-author are settled;
+   neither bypasses another author's audience permissions.
+5. External onward/audience permissions and creator-originated edits outside
+   project collaboration. The project co-author exception does not authorize
+   unrestricted direct edits through an ordinary share.
+6. Existing third-party shares and project membership on transfer, captured
+   project-review audiences, repeated transfers during pending review, and
+   pending additions with excluded parents. Require explicit resolution; do not
+   create unsupported cross-archive propagation.
+7. Birth-date edits/account-link consent presentation and retaining another
    creator's private content with explicit permission.
-5. Retained pending proposals when an individual item is hidden, and what the
+8. Retained pending proposals when an individual item is hidden, and what the
    former recipient can see after unsharing without regaining live access.
    Recovery/access to a contributor's own private additions after unsharing
    also needs an explicit workflow; no copy-on-unshare behavior is assumed.
-6. Actual validated payload contracts, derived date calculation, versioned RPCs,
+9. Revised project membership/audience/shared-queue structures and actual
+   validated payload contracts, derived date calculation, versioned RPCs,
    RLS/storage policies, archive freeze rules, and focused concurrency tests.
+10. Multi-timeline event identity/placement structures, permission-aware audience
+    expansion, and private note/media boundaries. Define ownership and behavior
+    for conflicting project roles, moving/transfer of a placed timeline, and
+    removal of the final placement. The MVP requirement to offer explicit
+    same-account placements during event creation/editing is settled.
+11. Organizing-event/entry structures and workflows: hierarchy depth and cycle
+    prevention, ordering and expanded/collapsed display without duplicate entries,
+    parent/entry audience boundaries, and move/removal/transfer behavior.
+    Organizing related entries is MVP scope; general-purpose event linking is not.
 
 ## Superseded v2 rules
 

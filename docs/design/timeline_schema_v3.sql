@@ -1,6 +1,13 @@
 -- Timeline draft v3, 2026-11-06.
 -- Companion: Life Timeline App Draft Data Model (MVP) v3.md.
 -- STRUCTURAL DRAFT ONLY. Not a migration; do not apply to an existing app database.
+-- Partial companion: the document's newer project collaboration rules are NOT
+-- modeled here. Project roles, author-approved audiences, and shared review queues
+-- need a structural redesign; reviewer_user_id still assumes one reviewer.
+-- Removed co-authors' authorship-only retained history/export is not modeled either.
+-- MVP explicit same-account multi-timeline event placement is NOT modeled:
+-- events remain timeline-local here; participant links are not placement grants.
+-- Organizing events containing separately typed events/memories are NOT modeled.
 -- Assumes Supabase auth.users and anon/authenticated roles exist.
 -- No app policies, RPCs, or grants are supplied: application access is fail-closed.
 -- Ownership, reviewer derivation, date calculation, archive exceptions, media
@@ -317,6 +324,7 @@ CREATE TABLE timeline_draft.review_trust (
 );
 
 -- Trust covers shared additions and edits/replacements this reviewer can decide.
+-- Earlier direct-sharing model only, NOT the project shared review queue.
 -- The timeline owner approves inclusion of additions; an item's editing authority
 -- approves edits/replacements. RPC checks permissions and applies acceptance
 -- atomically with validation, version checks where applicable, and audit history.
