@@ -2,12 +2,18 @@
 -- Companion: Life Timeline App Draft Data Model (MVP) v3.md.
 -- STRUCTURAL DRAFT ONLY. Not a migration; do not apply to an existing app database.
 -- Partial companion: the document's newer project collaboration rules are NOT
--- modeled here. Project roles, author-approved audiences, and shared review queues
+-- modeled here. Timeline roles, author-approved audiences, and shared review queues
 -- need a structural redesign; reviewer_user_id still assumes one reviewer.
--- Removed co-authors' authorship-only retained history/export is not modeled either.
+-- Post-removal retention/export and withdrawal rights remain unresolved.
 -- MVP explicit same-account multi-timeline event placement is NOT modeled:
 -- events remain timeline-local here; participant links are not placement grants.
 -- Organizing events containing separately typed events/memories are NOT modeled.
+-- November 17 document supersedes this SQL's selective-transfer and settling-review
+-- design: whole timelines transfer only after pending proposals resolve and the
+-- recipient confirms collaborator roles; every sender archive freezes at handover.
+-- Connected/paused/independent retained event placements, reconnection baselines,
+-- and project bulk/future timeline grants are NOT modeled. Historical table/comment
+-- descriptions below are not current product requirements.
 -- Assumes Supabase auth.users and anon/authenticated roles exist.
 -- No app policies, RPCs, or grants are supplied: application access is fail-closed.
 -- Ownership, reviewer derivation, date calculation, archive exceptions, media

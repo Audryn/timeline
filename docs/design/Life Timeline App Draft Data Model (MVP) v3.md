@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 16, 2026
+Draft v3, November 6, 2026; updated November 17, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -11,12 +11,15 @@ This document consolidates the agreed product direction. The companion SQL is
 a **structural design draft**, not a migration, runnable application backend,
 or completed authorization implementation. It deliberately grants no application
 access. It also predates the project collaboration decisions below: project
-membership, author-approved participant access, shared review queues, and
-removed co-authors' retained authorship history still need a structural redesign.
+timeline-level roles, author-approved participant access, and shared review
+queues still need a structural redesign. Departure retention remains unresolved.
 Its single-reviewer fields do not model those rules.
 The explicit multi-timeline event placements now required for MVP are also not
 represented by its timeline-local event structure.
 Organizing events containing related entries also need structural design.
+The SQL's item-selection transfer and settling-review archive structures are
+superseded by whole-timeline transfer with no pending proposals and an immediately
+frozen archive. Connected/paused/independent event states are not modeled.
 Do not paste it into an existing development or production database.
 
 The running app still uses project-owned data and project-scoped drafts.
@@ -30,7 +33,8 @@ subject; projects provide collaboration spaces as well as optional organization.
 Real and fictional people are supported.
 Explicit placement of one event on multiple subjects' timelines within one
 account is MVP scope, especially for family histories. It is not automatic
-sharing or a request for cross-account synchronization.
+sharing. Explicit continuity of already placed events after transfer is the
+limited cross-account exception described in section 4, not general sync.
 Story plotting, fictional calendars, comparisons, and legacy activation remain
 outside this implementation slice. The app remains online-first with recoverable
 browser drafts, not an offline replica or a custom two-way sync engine.
@@ -43,15 +47,17 @@ browser drafts, not an offline replica or a custom two-way sync engine.
 - A Person is a subject described in a timeline, not automatically a user.
   Linking a Person to an account requires that account's consent. Linking alone
   grants no access, transfers no ownership, and changes no review authority.
-- Each timeline-local content item records its original creator separately from
+- Each content item records its original creator separately from
   its current editing authority. The timeline records its current owner.
   Attribution does not disappear when editing authority changes.
-- Outside project collaboration, the creator reviews proposed changes to an
-  existing item by default. Within a project, authorized co-authors can edit
-  shared content directly and review contributor proposals regardless of who
-  originated it. Neither co-authorship nor approval transfers timeline ownership.
-  Explicit transfer gives the recipient editing authority over transferred items,
-  subject to closing the pre-transfer reviews described below.
+- The original timeline creator is its first Owner and Author. The current Owner
+  has administrative control; original creation is historical attribution after
+  transfer, not continuing authority. Ownership and authorship of contributed
+  material are distinct and do not establish intellectual-property rights.
+- Authorized timeline co-authors can edit shared content directly and review
+  contributor proposals regardless of origin, whether or not a project is used.
+  Co-authorship and proposal approval do not transfer ownership. Changing the
+  owner always requires transfer, even if the former owner remains a collaborator.
 - An event can have explicit placements on multiple subjects' timelines within
   one account. Those placements refer to one event, not independent event copies;
   shared-fact edits update every placement. Person involvement alone creates no
@@ -92,8 +98,8 @@ automatically exposed through another placement. A child's birth appearing on
 their timeline must not reveal a parent's private childbirth account.
 The shared event/placement schema, audience checks, and private-detail boundaries
 must be designed and tested before enabling this feature. Cross-account event
-placement is not part of this agreement; transfers and archives still require
-their own explicit rules.
+placement is not generally offered. Continuing connections for events already
+placed on retained timelines at transfer follow section 4.
 
 ### Organizing events and their entries (MVP)
 
@@ -129,19 +135,16 @@ not silently chosen defaults.
 
 ## 2. Sharing is live access, not ownership
 
-### Direct timeline sharing
+### Timeline sharing
 
-Outside a project, the action "Share this timeline" offers:
-
-| Choice | Recipient's rights |
-| --- | --- |
-| View Only | Read permitted content. No editing or contribution rights. |
-| View and Contribute | Read permitted content and submit shared additions or changes for review. May also create and directly edit their own private items, without modifying anyone else's content. |
-| Transfer Ownership | A separate handover operation: recipient owns selected content; sender loses live access unless shared back. |
+Sharing grants a timeline role from the table below. Transfer Ownership is a
+separate whole-timeline handover, not a sharing role or an event-by-event action.
+Collaborators is the umbrella term for owners/authors, co-authors, contributors,
+and read-only reviewers.
 
 Each share belongs to a specific recipient, with its own role and exclusions.
-Both sharing roles include **current and future non-private memories and
-approved updates automatically**. This is not a one-time snapshot.
+Sharing includes current and future permitted non-private content and approved
+updates, subject to the applicable author-audience rules. It is not a snapshot.
 
 The sharer can select **everything**, **everything except private items**, or
 exclude additional content for that recipient. "Everything" includes the sharer's
@@ -157,8 +160,8 @@ respect the effective audience; authorization is not just a UI filter.
 Private content remains accessible to its creator/current independent editing
 owner and any explicitly authorized recipients, subject to their sharing role.
 For private items, visibility permission alone does not grant direct editing
-authority; the project co-author view-implies-edit rule below applies to shared
-content only. Timeline ownership, View and Contribute, project co-authorship,
+authority; the co-author view-implies-edit rule below applies to shared
+content only. Timeline ownership, a Contributor role, co-authorship,
 and account linking do not by themselves reveal another creator's private layers.
 
 Contributors may keep their own private additions on the shared timeline and
@@ -176,25 +179,44 @@ This supersedes v2's copy-on-disconnect rule for ordinary sharing.
 Recipients cannot share someone else's material onward in the MVP. A future
 onward-sharing feature requires the original author's explicit permission.
 Granting access to another creator's contribution must not bypass that creator's
-permission. Project participant access follows the explicit approval rules below;
+permission. Collaborator access follows the explicit approval rules below;
 external onward sharing and transfer/archive consent remain separate workflows.
 
-### Project collaboration and roles
+### Timeline roles and project bulk controls
 
-Use a project to collaborate with multiple participants or grant co-authorship.
-Adding a timeline to a project does not transfer its ownership. Direct sharing,
-including trusted contributions, remains available outside a project.
-The project owner manages membership and assigns participant roles.
-Roles and author-to-participant permissions apply across all timelines within
-the project, not separately per timeline. This project-wide scope does not
-override private-item protection or another author's required audience approval.
+Permissions and collaborator roles belong to each timeline, not its project.
+The timeline owner alone manages invitations, roles, removals, trust settings,
+and ownership transfer. Co-authors may approve proposals but cannot administer
+collaborators merely by being co-authors.
 
 | Role | Rights within authorized content |
 | --- | --- |
-| Owner | Retains timeline ownership and access to shared contributions submitted to that timeline. This access cannot be disabled by the author; creator-only private items remain protected. |
-| Co-Author | Full direct editing rights over shared content they are authorized to see, without approval, regardless of who originated it. This is not timeline ownership or automatic membership-management authority. |
+| Owner | Current timeline owner, direct editor and proposal approver; alone manages sharing, roles, removals, trust, and transfer. Shared submissions remain visible to the owner; creator-only private items remain protected. |
+| Co-Author | Directly edits authorized shared content and approves/declines eligible proposals regardless of origin. Does not acquire ownership or collaborator-administration authority. |
 | Contributor | Proposes shared additions and edits for approval by the owner or an authorized co-author. Can keep creator-only private items separately. |
 | Reviewer | Reads permitted content only; cannot propose or directly edit content. |
+
+One collaborator does not require a project. Sharing with multiple collaborators
+prompts the user to create one as an organizational aid, not an access-control
+requirement. Projects can also contain multiple private timelines with no other
+participants. Users can create projects and add/remove timelines at any time.
+Moving a timeline into, out of, or between projects preserves its owner,
+collaborators, permissions, and existing trust; it does not widen access.
+
+Projects offer bulk controls over timeline-level grants, including a people-by-
+timeline view with mixed roles shown explicitly. For a family project, each child
+can access only their timeline while a partner has Co-Author access to all.
+For a screenplay, lead writers can be Co-Authors on all character timelines and
+consultants Reviewers on all, with per-timeline changes still possible.
+
+The project owner can explicitly authorize grants for future timelines,
+separately from applying grants to existing timelines. These defaults may apply
+to timelines that owner owns; another timeline owner's authorization is required
+for their timeline. Adding an existing timeline must preserve its access and
+offer any additional grants explicitly. Project ownership alone cannot override
+timeline ownership, private-item protection, or author audience permissions.
+Detailed authority for project-container management and mixed-owner projects
+remains open; a project handover never silently transfers its timelines.
 
 Authorship attribution and timeline ownership remain distinct. A co-author's
 direct edits must still use version checks and revision history; "no approval"
@@ -202,11 +224,14 @@ does not permit silent overwrites of concurrent changes.
 
 ### Author-approved participant access
 
-Each author controls whether other project participants can view their shared
+Each author controls whether other collaborators can view their shared
 contributions. For a Contributor, the author can also allow or deny suggestions
 on that author's work. Such permission cannot elevate the participant's role:
 a Reviewer never gains suggestion rights, and a participant who cannot view an
 item cannot suggest changes to it.
+This controls proposal submission/access, not the decision on an already
+authorized proposal. It does not create an original-author veto in the shared
+queue or a suggestion-only restriction on a Co-Author's authorized shared work.
 
 For a Co-Author, permission to view shared content includes direct editing;
 there is no separate read-only or suggestion-only restriction on that content.
@@ -232,27 +257,24 @@ author's work must not relabel its authorship to bypass their audience controls.
 How permissions apply to jointly edited material, later revocation, and future
 contributions must be specified in the remaining workflows below.
 
-### Removing a project co-author
+### Removal, retention, and withdrawal: reopened
 
-The project owner can remove a co-author. Removal revokes project access,
-including direct editing, proposal review, and all live access to other authors'
-content. It does not retract accepted contributions from the project.
+The timeline owner can remove a collaborator, revoking the access that grant
+provided. It does not erase another independently authorized timeline or archive.
+The earlier guarantee of authorship-only read access/export after removal is
+**not settled**. A small edit must not provide a way to export somebody else's
+whole timeline, record snapshots, or surrounding text after access is revoked.
 
-The removed co-author retains **read-only access to their own authored revisions,
-with export available**. This retained view is limited to material they authored
-before removal; it provides no access to other authors' revisions or future
-project changes, including later changes to items they originally created.
-It is not a continuing project membership, a live item view, or an editable
-personal copy.
+Contribution withdrawal is also reopened. Access revocation, deleting material,
+retaining/exporting it, and permission to reuse/publish it are separate issues.
+Authorship or an app role does not establish a right to retract or reuse content;
+collaborator agreements may affect those rights. The app does not interpret
+contracts or guarantee that previously read/exported material cannot be reused.
 
-Retained history/export must contain only material attributable to that
-co-author. A whole-record revision snapshot or diff context may contain another
-author's work and is not automatically eligible for retention. Authorship
-tracking and export structure still need design; do not infer "my authored
-revision" means "everything in a record I once edited." Existing independent
-personal source items are not made read-only by removal from this project.
-Whether the same retained-access rule applies when Contributors or Reviewers
-are removed remains to be decided.
+A departure notification offering to leave contributions or request removal is
+a candidate workflow only. Guaranteed deletion, handling jointly edited work,
+nonresponse, and export entitlement remain unresolved. Do not automatically
+delete accepted contributions or promise retained access based on this draft.
 
 ## 3. Contributions, review, and trust
 
@@ -262,11 +284,12 @@ Proposals have a stable ID, recipient timeline, contributor, authorized review
 audience, typed target, submitted payload, and base version where they change existing content.
 Targets include Person, event, note, and media, not just events.
 
-- Outside a project, shared additions are reviewed by the timeline owner. New content
+- Shared additions retain contributor attribution and enter the authorized
+  timeline review queue. New content
   retains the contributor's original attribution. A contributor's own private
   additions do not enter another user's approval queue.
-- Outside a project, changes/replacements are reviewed by that item's creator,
-  or its editing authority after the transfer exception has finished.
+- Changes/replacements use that same authorized queue, not an original-creator
+  veto. A co-author directly edits authorized shared work without a proposal.
 - Notes expressing a different recollection can be separate additions rather
   than an overwrite of someone else's words.
 - Media additions, caption changes, and file replacements are distinguishable
@@ -275,7 +298,7 @@ Targets include Person, event, note, and media, not just events.
 - Private content is not available as a proposal target to a recipient without
   explicit authority to see it.
 
-In a project, contributor proposals go to a **shared review queue for the owner
+Contributor proposals go to a **shared review queue for the timeline owner
 and all authorized co-authors**, regardless of who originated the target content.
 Any one authorized owner or co-author can approve or decline; unanimity and a
 separate original-creator approval are not required. The role and access check includes
@@ -306,8 +329,9 @@ own timeline, without giving recipients access to that timeline.
 | Cancelled | Close an unaccepted proposal and remove its preview/queue entry; accepted content is unchanged. |
 | Outdated | Close without applying because its target/version is no longer valid. A new proposal is required. |
 
-There is **no retraction of accepted contributions**. Errors in accepted content
-are addressed through a new change/replacement proposal.
+Accepted contributions cannot be undone by cancelling their original proposal.
+Corrections use new changes/proposals under the actor's role. A separate right
+or workflow to withdraw accepted material remains reopened, as described above.
 
 Cancellation is allowed while pending. If acceptance, including auto-accept,
 wins a simultaneous race, cancellation cannot roll it back. The database must
@@ -315,26 +339,22 @@ serialize the decision and return the actual outcome.
 
 ### Trust and clearing a contributor's backlog
 
-Outside a project, `auto_accept` is an explicit trust setting made by the **reviewer for one
-contributor in one timeline**. It automatically accepts new shared additions
-and proposed edits/replacements that reviewer is authorized to decide. For new
-shared additions, the timeline owner's trust supplies inclusion approval.
-A direct sharer cannot auto-accept edits for a different creator. Validation, audience
-permissions, expected versions where applicable, and audit history still apply;
-auto-accept is not unrestricted direct write access. A contributor's own private
-additions need no inclusion approval and do not depend on this trust setting.
-Within a project, the **project owner manages trust for each contributor across
-all project timelines**. Co-authors may manually approve or decline authorized
-proposals, but do not independently configure project-wide trust.
+The **timeline owner manages auto-accept trust for each contributor on that
+timeline**. Co-authors may manually approve or decline authorized proposals,
+but do not independently configure trust. Project bulk controls act on these
+timeline settings only where the acting owner has authority.
+Validation, audience permissions, expected versions, and audit history still
+apply. A contributor's own private additions need no inclusion approval.
 The owner's "Always accept contributions from this person" action enables
 automatic acceptance of that contributor's new shared additions and proposed
-edits/replacements throughout the project.
+edits/replacements on the timelines explicitly included in that action.
 
 Offer an explicit option alongside that action to **also accept all eligible
 pending proposals from this person across the project**. Enabling future trust
 alone does not silently accept the backlog. The optional bulk action covers
-pending proposals across project timelines, not only the currently displayed
-page, and does not include unrelated projects or direct shares.
+pending proposals across authorized project timelines, not only the currently
+displayed page. It does not include unrelated timelines or override another
+owner's settings. Show the action's exact scope and any mixed trust settings.
 
 Trust and bulk acceptance do not grant content access or bypass author audience
 permissions, private-item protection, validation, expected versions, or the
@@ -358,53 +378,103 @@ unshared contributor's retained proposals remains to be designed.
 
 ## 4. Transfer and the sender's archive
 
-Transfer includes an explicit selection/confirmation step. The sender chooses
-what passes, including whether to include their private material. Another
-creator's private material needs that creator's explicit authorization; it is
-not the sender's to grant.
+### Whole-timeline handover and prerequisites
 
-The selected material becomes recipient-owned and editable. Excluded private
-material stays out of the recipient's timeline and remains available in the
-sender's archive. Transfer preserves attribution but changes editing authority.
-If the recipient previously contributed private items on that timeline, those
-items remain theirs and are visible alongside the transferred content. The
-sender cannot exclude or acquire the recipient's own private additions.
-The sender's archive does not include them without the recipient's permission.
-The sender loses live viewing and editing access; continued access requires a
-new share from the recipient. Existing shares must not silently grant access to
-the new owner's future private content; their disposition needs confirmation
-in the transfer workflow.
+Changing the owner is a formal transfer even when the former owner remains a
+Contributor or Co-Author. Delegating content leadership and proposal review
+without changing ownership uses the Co-Author role. Delegated administration
+without ownership has not been added.
 
-**Automatically create a read-only archive for the sender at transfer.**
-It contains the pre-transfer content the sender is authorized to retain,
-including their own excluded private notes. It must retain the referenced media
-independently of deletion or replacement in the recipient's live timeline.
+Transfer covers the timeline and all its events, not an item-selection or
+standalone event-transfer workflow. Private content remains subject to explicit
+authorization: neither timeline ownership nor transfer reveals another creator's
+private layers. The sender can authorize their own private material; another
+creator's material needs that creator's permission. Recipient-owned private
+additions remain theirs. Private exclusions must not be used to leak content
+through notes, metadata, history, or media.
 
-The archive has a narrow exception to immutability:
+Before handover completes:
 
-1. Capture the exact proposals pending at transfer, with their original
-   reviewers and restricted pre-transfer context.
-2. Lock each affected live item until all its captured reviews are closed.
-   The new owner can edit unaffected items immediately.
-3. For direct-sharing reviews, original creators decide those captured reviews.
-   The captured-review audience for a project shared queue remains to be designed.
-   Accepted changes apply to
-   both transferred content and the sender's corresponding archive content,
-   wherever the authorized content exists.
-4. The new owner can explicitly cancel abandoned captured requests, without
-   applying them, to release their locks.
-5. Once the captured reviews close, the archive is frozen. Recipient edits and
-   new memories never flow back.
+1. Resolve all pending proposals affecting the transferring timeline. They may
+   be accepted, declined, cancelled, or outdated as appropriate; clearing the
+   queue does not mean accepting everything.
+2. The recipient explicitly confirms which existing collaborators and roles
+   carry over, including any continuing role for the sender. Unconfirmed access
+   does not carry over. Access can therefore begin at handover, not only through
+   a new share afterward.
+3. Confirm the shared-event connection policy below and prepare the authorized
+   frozen archive and retained media.
+4. Commit ownership, confirmed access, event-connection state, and archive
+   atomically. Recheck versions and the absence of pending proposals; new
+   submissions or edits must not slip in after confirmation and invalidate it.
+   The exact short-lived transfer gate/reconfirmation workflow needs design.
 
-Resolving several proposals against the same version may make later proposals
-outdated. Never overwrite a newer accepted revision merely to finish a queue.
-Edits to an excluded item can resolve in its authorized retained context, but
-must not recreate that item in the recipient's timeline.
+The sender loses ownership and any live access not explicitly confirmed.
+Role confirmation does not silently authorize private content or widen another
+author's audience. Project ownership and the disposition of mixed-owner project
+containers remain separate from this timeline transfer.
 
-Invitations, recipient acceptance, selection validation, and transfer commitment
-must be separate from ordinary sharing. The recipient-confirmation UX and the
-handling of pending additions spanning included/excluded items are still open.
-Do not silently grant the sender general access for review.
+### Frozen archive at every transfer
+
+Automatically create a read-only archive for the sender at every transfer,
+including when they stay as a Contributor or Co-Author. Freeze it immediately:
+no pending reviews cross the transfer boundary, and no later live changes flow
+back. This supersedes settling-review archives, captured-review locks, and
+live/archive proposal propagation.
+
+Keep the archive in a separate Archives area, not mixed into the active timeline.
+It records authorized pre-transfer content, including the sender's own private
+material not passed on. It does not acquire another creator's private work
+without permission. Retain its media independently of live deletion/replacement.
+Archive contents are not necessarily identical to recipient-visible contents.
+
+A former owner who stays as an authorized Co-Author can compare the handover
+snapshot with the current live timeline to spot changes. Comparison never grants
+access to later private/restricted material and is not automatic restoration or
+rollback. The detailed comparison UI remains to be designed.
+
+### Events also placed on retained timelines
+
+A birth shared between parent/child timelines, a trip on partners' timelines,
+or a fictional event on several character timelines must not disappear from a
+retained timeline because another placement is transferred.
+Transfer offers one timeline-level connection policy for affected events, not
+an event-by-event review. Events found only on the transferring timeline simply
+transfer. A continuing collaborator role alone does not authorize synchronization.
+
+| State | Meaning |
+| --- | --- |
+| Connected | Authorized placements use one live event under mutually agreed access/editing rules; shared-fact updates reach those placements. |
+| Paused connection | Each side retains its authorized handover version; changes do not flow, but common event identity and the common handover version are retained for possible reconciliation. |
+| Made independent | An explicit separation. Versions evolve independently with no automatic reconnect in MVP. |
+
+If continued collaboration/connection is not authorized, **pause rather than
+irreversibly split by default**. A new recipient need not understand or resolve
+every shared event just to accept a timeline. Explain that changes will not
+update the other person's timelines unless both agree to reconnect.
+Making events independent is a separate explicit choice, not a consequence of
+declining editing rights. It has no automatic undo; permanent impossibility of
+future reconciliation is not claimed.
+
+Later, offering collaboration can include a separate "Reconnect shared events"
+action with both sides' authorization:
+
+- Neither side changed: reconnect without choosing between different content.
+- One side changed: show the proposed update for confirmation.
+- Both sides changed: preserve both and require reconciliation before reconnecting.
+
+Unresolved events can stay paused while others reconnect. Private additions and
+new audiences must not leak through comparison or reconnection. Neither timeline
+owner automatically controls the other's placement or can delete the event
+everywhere. Later loss of collaboration needs an explicit disconnect workflow
+that preserves independently retained history without granting ongoing access.
+
+Reconciliation tooling may be deferred initially, but stable common identities,
+authorized baseline versions, and paused-state provenance must be designed now.
+Version/common-baseline tracking must remain correct if reconnection tooling is
+introduced later. Exact multi-party/multiple-transfer rules remain open.
+This limited transfer-continuity mechanism is distinct from ordinary unsharing,
+which does not create copies for recipients without their own retained placement.
 
 ## 5. Flexible dates: facts, uncertainty, and placement
 
@@ -531,6 +601,8 @@ record their own wording without fitting it into type-specific prompts.
 Changing an event's type or template must preserve this text. The field follows
 the event's applicable visibility permissions; entering a personal recollection
 does not automatically make it private.
+Every event also has a required Title, separate from type and additional text,
+with a maximum of 200 characters in the current contracts and structural draft.
 
 Separately, optional multiple topics/categories organize and filter an event:
 Work, Family, Travel, etc. Users can add these labels. For example, a Residence
@@ -552,13 +624,12 @@ in-memory database; that is not provider acceptance.
 
 The table map below describes the **existing SQL draft**, not a complete model
 of the newly agreed collaboration rules. The draft's `project` is still an
-organizational record; it has no participant membership/role or author-audience
+organizational record; it has no complete timeline-role or author-audience
 permission structures. Its required `contribution.reviewer_user_id` represents
 the earlier single-reviewer design, not the shared queue. Those structures and
 the project trust/transfer implications must be redesigned before implementation.
-The SQL's item-level creator/editor IDs and whole before/after values also do not
-by themselves provide the authorship-specific retained history required when a
-co-author is removed.
+The SQL's item-level creator/editor IDs and whole before/after values do not
+resolve jointly edited content or establish post-removal retention rights.
 The timeline-local `event` and `event_person` structures do not implement explicit
 placements of one event across timelines. Participant links must not be used as
 implicit placements or sharing grants. A shared event identity and placement
@@ -567,6 +638,11 @@ need structural design.
 The SQL also has no event-to-organizing-event relationship. Its note/media
 attachments do not substitute for separately typed events or memories within a
 Trip or Job.
+Its `transfer_item`, `transfer_review`, and `settling_reviews` structures retain
+the superseded selective-transfer/pending-review design. They must be redesigned
+or removed, not treated as an alternative implementation of section 4.
+Connected/paused/independent event continuity and reconciliation baselines are
+missing too. Historical SQL comments do not override the revised product rules.
 
 | Structure | Purpose |
 | --- | --- |
@@ -576,16 +652,16 @@ Trip or Job.
 | date_endpoint | Authored civil components/wording and per-endpoint uncertainty bounds. |
 | place, topic, event_topic, event_person | Structured location, optional labels, participant links. |
 | share_access, share_exclusion, share_private_authorization | Per-recipient live roles, exclusions, and explicit authorization for existing private items. |
-| review_trust | Reviewer-specific auto-accept for a contributor's shared additions and edits/replacements. |
+| review_trust | Historical reviewer-specific trust; revised trust is owner-managed per timeline. |
 | contribution | Stable typed proposals, target/version, submitted snapshot, status and decision metadata. |
-| ownership_transfer, transfer_item, transfer_review | Selection, archive mappings, and captured pending-review lock bookkeeping. |
+| ownership_transfer, transfer_item, transfer_review | Historical transfer structures; selective transfer and captured pending-review bookkeeping are superseded. |
 | change_log, mutation_receipt | Private revision audit and replay-safe mutation results. |
 | media_asset | Private immutable storage-object identity and readiness; retained references protect snapshots. |
 | notification | Content-free in-app activity; pending count is a query, not stored. |
 
 Constraints enforce many shapes and same-timeline foreign keys. They do **not**
 implement reviewer derivation, media retention, consent, endpoint-bound
-calculation, review locks, ownership changes, or audience rules. These are
+calculation, transfer preconditions, ownership changes, or audience rules. These are
 mandatory database-function/policy requirements before any access is granted.
 Transfer item/review mappings intentionally cross timelines: their source,
 recipient, and archive scope must be checked by the transfer RPC. The draft does
@@ -599,14 +675,13 @@ fail-closed scaffolding, not completed security.
 
 - Authenticated identity comes from the server/provider, never submitted owner
   or reviewer IDs. Derive authorization and eligible reviewers using authoritative rows.
-- Enforce project roles together with author-approved audience access. A co-author
+- Enforce timeline roles together with author-approved audience access. A co-author
   can directly edit authorized shared work, not private or unapproved hidden work.
   Recheck role/access and proposal state atomically when deciding a proposal;
   membership alone is not sufficient permission. Preserve original attribution.
-- On co-author removal, revoke live project access while preserving a separate
-  read-only, exportable view of only their authored revisions. Retained history
-  must not expose other authors' material through snapshots, diff context, media,
-  or newly fetched project data.
+- On collaborator removal, revoke the affected live grant. Do not promise
+  authorship-only retention/export or withdrawal while those decisions remain
+  open; do not expose others' work through snapshots, diff context, or media.
 - RLS must protect accepted content, private layers, Person/place metadata,
   proposal previews, before/after audit data, notifications, and archive assets.
 - Private visibility requires explicit per-item/per-recipient authorization;
@@ -615,12 +690,13 @@ fail-closed scaffolding, not completed security.
   through owner queries, review queues, notifications, or transfer archives.
 - Allow only validated transactional RPC writes, not direct browser table writes.
   Lock/version-check targets and share state; prevent author/owner/version forgery.
-- Apply review result, content update, links, version increment, log, notifications,
-  archive exception, and review-lock release atomically.
+- Apply review result, content update, links, version increment, log, and
+  notifications atomically. No pending review may carry through transfer.
 - Use actor-scoped stable request IDs, payload fingerprints, and durable
   acknowledged results. Replays return the prior result; changed content cannot
   reuse a request identity. Stale versions preserve user work.
-- Transfer changes ownership/access only after selection and authorized archive
+- Transfer changes ownership/access only after pending proposals are resolved,
+  recipient-confirmed grants, connection policy, and authorized frozen archive
   content/asset retention are ready. Upload steps may be staged, but the visible
   handover is atomic; failure must not produce a half-transferred account.
 - Media references are private storage keys, not public URLs or cached signed
@@ -657,44 +733,47 @@ trigger, or partial account-transfer implementation is included in the SQL.
 These are intentionally not silently filled in by the SQL:
 
 1. Type-specific forms/prompts, starter topics, sharing/transfer confirmation UX.
-2. Adding/removing timelines from a project: permission checks, existing content,
-   pending reviews, and transition into/out of project-wide roles and author
-   permissions. The owner manages membership/roles; these permissions apply across
-   all project timelines. Co-authorship is not authority to transfer ownership.
+2. Project-container administration, including mixed-owner projects, who may
+   add/remove timelines, and project-owner succession. Timeline roles and access
+   persist through project moves. Define future-grant activation and bulk-action
+   scope/confirmation without overriding any timeline owner's authority.
 3. Audience-permission lifecycle: what an approval covers for future contributions,
    how later revocation works for accepted and jointly edited content, and how
    owner exclusions interact with author permissions without widening access.
    Specify role changes, including promotion from Contributor to Co-Author, which
    changes editing rights even when the person could already view the material.
-   Define authorship-specific retained-history/export structures for removed
-   co-authors and whether retention also applies to removed Contributors/Reviewers.
+   Post-removal retention/export and contribution withdrawal are reopened,
+   including jointly edited material, contractual boundaries, and the candidate
+   departure-notification workflow. No automatic retention entitlement is settled.
 4. Shared review lifecycle: eligibility changes while pending, contributors' edits
    to their own accepted contributions, and what happens if no authorized reviewer
    remains. Define confirmation, progress, and failure/retry UX for the optional
-   project-wide acceptance of a trusted contributor's backlog. Owner-managed
-   project trust and approval/decline by any authorized owner/co-author are settled;
+   authorized project-wide acceptance of a trusted contributor's backlog.
+   Timeline-owner-managed trust and approval/decline by any authorized owner/co-author are settled;
    neither bypasses another author's audience permissions.
-5. External onward/audience permissions and creator-originated edits outside
-   project collaboration. The project co-author exception does not authorize
-   unrestricted direct edits through an ordinary share.
-6. Existing third-party shares and project membership on transfer, captured
-   project-review audiences, repeated transfers during pending review, and
-   pending additions with excluded parents. Require explicit resolution; do not
-   create unsupported cross-archive propagation.
+5. External onward/audience permissions and any interaction between role grants
+   and private-item editing authority. Timeline co-authorship is not a right to
+   view or edit another author's unapproved private content.
+6. Detailed transfer gating, concurrent edits/submissions, private-content
+   boundaries, and repeated/multi-party transfers. Recipient confirmation of
+   collaborator roles and resolution of all pending proposals before handover
+   are settled. Archives freeze immediately; no captured review queue carries over.
 7. Birth-date edits/account-link consent presentation and retaining another
    creator's private content with explicit permission.
 8. Retained pending proposals when an individual item is hidden, and what the
    former recipient can see after unsharing without regaining live access.
    Recovery/access to a contributor's own private additions after unsharing
    also needs an explicit workflow; no copy-on-unshare behavior is assumed.
-9. Revised project membership/audience/shared-queue structures and actual
+9. Revised timeline-role/audience/shared-queue structures, project bulk/future
+   grant structures, and actual
    validated payload contracts, derived date calculation, versioned RPCs,
    RLS/storage policies, archive freeze rules, and focused concurrency tests.
 10. Multi-timeline event identity/placement structures, permission-aware audience
     expansion, and private note/media boundaries. Define ownership and behavior
-    for conflicting project roles, moving/transfer of a placed timeline, and
-    removal of the final placement. The MVP requirement to offer explicit
-    same-account placements during event creation/editing is settled.
+    for conflicting timeline roles, removal of the final placement, and
+    cross-account event editing authority. Connected/paused/independent transfer
+    states are agreed; durable identities/baselines, safe reconnection, later
+    disconnection, and multiple-party behavior still need detailed design.
 11. Organizing-event/entry structures and workflows: hierarchy depth and cycle
     prevention, ordering and expanded/collapsed display without duplicate entries,
     parent/entry audience boundaries, and move/removal/transfer behavior.
@@ -704,9 +783,24 @@ These are intentionally not silently filled in by the SQL:
 
 - Authorship alone no longer determines ownership/editing authority after transfer.
 - Ordinary unsharing does not create independent recipient copies.
-- No retraction of accepted contributions; pending cancellation remains allowed.
+- Cancellation applies only to pending proposals; withdrawal of accepted content
+  is reopened rather than an established entitlement or absolute prohibition.
 - Person account linking does not change the reviewer.
 - Single event-level precision is replaced by independent endpoint descriptions.
 - Place does not automatically determine seasonal interpretation.
 - Event type is not a replacement for optional multi-topic categorization.
 - Legacy functionality is deferred rather than represented as an active grant.
+
+## Superseded earlier v3 rules
+
+- Project-wide roles are replaced by timeline-level roles with project bulk
+  controls and explicit future-timeline grants.
+- Co-authorship does not require a project; eligible owner/co-author review is
+  based on timeline authority, not original item authorship.
+- Post-removal authorship-only retention/export is not a settled guarantee.
+- Item-by-item transfer selection and pending-review carryover are replaced by
+  whole-timeline handover with no pending proposals, recipient-confirmed access,
+  and a frozen archive at every transfer.
+- No editing grant does not imply irreversible shared-event separation:
+  affected retained placements pause by default unless connection is authorized
+  or independence is explicitly chosen.
