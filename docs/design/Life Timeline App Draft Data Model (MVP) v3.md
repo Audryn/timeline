@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 17, 2026
+Draft v3, November 6, 2026; updated November 18, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -11,7 +11,7 @@ This document consolidates the agreed product direction. The companion SQL is
 a **structural design draft**, not a migration, runnable application backend,
 or completed authorization implementation. It deliberately grants no application
 access. It also predates the project collaboration decisions below: project
-timeline-level roles, author-approved participant access, and shared review
+timeline-level roles, private-item authorization, and shared review
 queues still need a structural redesign. Departure retention remains unresolved.
 Its single-reviewer fields do not model those rules.
 The explicit multi-timeline event placements now required for MVP are also not
@@ -85,7 +85,7 @@ only births.
 Saving commits the event and the selected placement changes together. No extra
 save-time placement prompt is needed unless the change would expand the audience.
 Different timelines in the same account may have different sharing audiences:
-any expansion needs explicit confirmation and applicable author permissions.
+any expansion needs explicit confirmation and applicable private-item permissions.
 Confirmation cannot substitute for authority the user does not have.
 
 Show a placed event once in a combined timeline view. Shared-fact edits affect
@@ -142,20 +142,21 @@ separate whole-timeline handover, not a sharing role or an event-by-event action
 Collaborators is the umbrella term for owners/authors, co-authors, contributors,
 and read-only reviewers.
 
-Each share belongs to a specific recipient, with its own role and exclusions.
-Sharing includes current and future permitted non-private content and approved
-updates, subject to the applicable author-audience rules. It is not a snapshot.
+Each share belongs to a specific recipient with a timeline role. The timeline
+owner's grant covers **all non-private content on that timeline**, including
+current and future accepted contributions from every author and approved updates.
+Authors do not separately approve new collaborators, restrict particular
+collaborators' access to shared items, or set per-author suggestion permissions.
+There are no per-recipient exclusions for non-private items under this rule.
+This replaces the earlier selective non-private sharing and author-audience model.
 
-The sharer can select **everything**, **everything except private items**, or
-exclude additional content for that recipient. "Everything" includes the sharer's
-own private items explicitly authorized at that time; another creator's
-private items still require that creator's permission. Future private items
-are not included automatically and require explicit per-recipient authorization.
-The items remain marked private; authorization does not make them public.
-Excluding an event excludes its attached notes,
-media, and any routes or derived results that would reveal that event. Item,
-attachment, Person, place, search, counts, and notification queries all need to
-respect the effective audience; authorization is not just a UI filter.
+Private items remain separately protected. A creator may explicitly authorize
+private items for particular recipients; another user cannot grant that permission
+merely by owning the timeline. Future private items are not automatically
+included, and an authorized private item remains marked private. Role grants
+do not make private content visible or grant direct editing of it.
+Item, attachment, Person, place, search, count, history, and notification queries
+must preserve these boundaries; authorization is not just a UI filter.
 
 Private content remains accessible to its creator/current independent editing
 owner and any explicitly authorized recipients, subject to their sharing role.
@@ -171,16 +172,17 @@ items, not proposals waiting for the timeline owner to approve. Submitting
 changes to someone else's content still requires review; the proposal is visible
 to its authorized reviewer.
 
-The owner can later hide previously shared content or revoke the entire share.
+The owner can revoke a timeline share. Shared-item visibility cannot be narrowed
+per recipient; private-item permissions remain separately controlled.
 **Unsharing removes live viewing/contribution access and creates no recipient
 copy.** It cannot erase previous downloads, independent copies, or archives.
 This supersedes v2's copy-on-disconnect rule for ordinary sharing.
 
-Recipients cannot share someone else's material onward in the MVP. A future
-onward-sharing feature requires the original author's explicit permission.
-Granting access to another creator's contribution must not bypass that creator's
-permission. Collaborator access follows the explicit approval rules below;
-external onward sharing and transfer/archive consent remain separate workflows.
+Collaborators cannot invite others merely by being Co-Authors, Contributors, or
+Reviewers. The timeline owner can add collaborators to all non-private timeline
+content without fresh approval from its authors. This grants app access, not
+copyright ownership or unrestricted publication/reuse rights.
+External onward sharing and transfer/archive consent remain separate workflows.
 
 ### Timeline roles and project bulk controls
 
@@ -214,7 +216,7 @@ separately from applying grants to existing timelines. These defaults may apply
 to timelines that owner owns; another timeline owner's authorization is required
 for their timeline. Adding an existing timeline must preserve its access and
 offer any additional grants explicitly. Project ownership alone cannot override
-timeline ownership, private-item protection, or author audience permissions.
+timeline ownership or private-item protection.
 Detailed authority for project-container management and mixed-owner projects
 remains open; a project handover never silently transfers its timelines.
 
@@ -222,40 +224,25 @@ Authorship attribution and timeline ownership remain distinct. A co-author's
 direct edits must still use version checks and revision history; "no approval"
 does not permit silent overwrites of concurrent changes.
 
-### Author-approved participant access
+### Timeline audience and private items
 
-Each author controls whether other collaborators can view their shared
-contributions. For a Contributor, the author can also allow or deny suggestions
-on that author's work. Such permission cannot elevate the participant's role:
-a Reviewer never gains suggestion rights, and a participant who cannot view an
-item cannot suggest changes to it.
-This controls proposal submission/access, not the decision on an already
-authorized proposal. It does not create an original-author veto in the shared
-queue or a suggestion-only restriction on a Co-Author's authorized shared work.
+A new collaborator's role applies to all non-private timeline content immediately
+when their access becomes active. No author-consent queue or partially activated
+role is needed for shared contributions. Explain when contributing that shared
+work is visible to current and future collaborators chosen by the timeline owner.
 
-For a Co-Author, permission to view shared content includes direct editing;
-there is no separate read-only or suggestion-only restriction on that content.
-An author can withhold access, but cannot grant a co-author viewing without the
-associated editing rights. Shared submissions remain visible to the timeline
-owner; creator-only private items remain protected from both owner and co-authors.
-Explicitly sharing a private item is not an implicit conversion to shared
-project content or an automatic grant of direct co-author editing rights.
+Co-Authors can directly edit non-private content and resolve eligible proposals;
+Contributors can propose changes; Reviewers only read. No author-specific switch
+can elevate or reduce those role capabilities on non-private items.
+Private items remain outside that shared audience unless explicitly authorized.
+Authorizing private viewing neither converts an item to shared nor automatically
+grants direct Co-Author editing rights over it.
 
-When participants join, notify affected authors and request approval before
-exposing their existing contributions. Do not use the earlier proposed wording
-that contributions are shared with newcomers by default. Approval by the
-timeline owner does not substitute for another author's audience permission.
-
-A new co-author can activate with partial access while approvals are pending.
-For example, the new co-author can edit the owner's authorized shared content
-immediately, while another author's work stays hidden until that author approves.
-Approval then includes direct editing under the co-author role.
-
-Audience controls must cover accepted content, pending proposals, before/after
-history, attached media, and derived results. Editing or approving another
-author's work must not relabel its authorship to bypass their audience controls.
-How permissions apply to jointly edited material, later revocation, and future
-contributions must be specified in the remaining workflows below.
+This simplification does not expose pending proposals, private revision history,
+or private attachments to every reader. Review queues and before/after context
+still require appropriate review authority and private-content checks.
+Authorship attribution remains intact; retention, withdrawal, and rights to
+publish jointly edited material remain separate unresolved questions.
 
 ### Removal, retention, and withdrawal: reopened
 
@@ -356,7 +343,7 @@ pending proposals across authorized project timelines, not only the currently
 displayed page. It does not include unrelated timelines or override another
 owner's settings. Show the action's exact scope and any mixed trust settings.
 
-Trust and bulk acceptance do not grant content access or bypass author audience
+Trust and bulk acceptance do not grant content access or bypass timeline
 permissions, private-item protection, validation, expected versions, or the
 no-self-approval rule. Recheck the owner's authority, applicable trust, and each
 proposal's state when applying acceptance. Each proposal resolves atomically
@@ -410,8 +397,8 @@ Before handover completes:
    The exact short-lived transfer gate/reconfirmation workflow needs design.
 
 The sender loses ownership and any live access not explicitly confirmed.
-Role confirmation does not silently authorize private content or widen another
-author's audience. Project ownership and the disposition of mixed-owner project
+Role confirmation covers non-private content, not implicit private-item access.
+Project ownership and the disposition of mixed-owner project
 containers remain separate from this timeline transfer.
 
 ### Frozen archive at every transfer
@@ -624,7 +611,7 @@ in-memory database; that is not provider acceptance.
 
 The table map below describes the **existing SQL draft**, not a complete model
 of the newly agreed collaboration rules. The draft's `project` is still an
-organizational record; it has no complete timeline-role or author-audience
+organizational record; it has no complete timeline-role or private-authorization
 permission structures. Its required `contribution.reviewer_user_id` represents
 the earlier single-reviewer design, not the shared queue. Those structures and
 the project trust/transfer implications must be redesigned before implementation.
@@ -643,6 +630,9 @@ the superseded selective-transfer/pending-review design. They must be redesigned
 or removed, not treated as an alternative implementation of section 4.
 Connected/paused/independent event continuity and reconciliation baselines are
 missing too. Historical SQL comments do not override the revised product rules.
+The historical `share_exclusion` structure and author-audience consent comments
+also predate whole-timeline non-private access; do not implement those exclusions
+as an alternative to the current rule. Explicit private-item grants remain needed.
 
 | Structure | Purpose |
 | --- | --- |
@@ -651,7 +641,7 @@ missing too. Historical SQL comments do not override the revised product rules.
 | person, event, note, media | Typed content for each item; content/link IDs cannot cross timeline scopes. |
 | date_endpoint | Authored civil components/wording and per-endpoint uncertainty bounds. |
 | place, topic, event_topic, event_person | Structured location, optional labels, participant links. |
-| share_access, share_exclusion, share_private_authorization | Per-recipient live roles, exclusions, and explicit authorization for existing private items. |
+| share_access, share_exclusion, share_private_authorization | Historical sharing structures; non-private exclusions are superseded, while private-item authorization remains required. |
 | review_trust | Historical reviewer-specific trust; revised trust is owner-managed per timeline. |
 | contribution | Stable typed proposals, target/version, submitted snapshot, status and decision metadata. |
 | ownership_transfer, transfer_item, transfer_review | Historical transfer structures; selective transfer and captured pending-review bookkeeping are superseded. |
@@ -675,8 +665,8 @@ fail-closed scaffolding, not completed security.
 
 - Authenticated identity comes from the server/provider, never submitted owner
   or reviewer IDs. Derive authorization and eligible reviewers using authoritative rows.
-- Enforce timeline roles together with author-approved audience access. A co-author
-  can directly edit authorized shared work, not private or unapproved hidden work.
+- Enforce timeline roles across all non-private content. A Co-Author can directly
+  edit shared work; private-item viewing and editing remain separately protected.
   Recheck role/access and proposal state atomically when deciding a proposal;
   membership alone is not sufficient permission. Preserve original attribution.
 - On collaborator removal, revoke the affected live grant. Do not promise
@@ -737,9 +727,10 @@ These are intentionally not silently filled in by the SQL:
    add/remove timelines, and project-owner succession. Timeline roles and access
    persist through project moves. Define future-grant activation and bulk-action
    scope/confirmation without overriding any timeline owner's authority.
-3. Audience-permission lifecycle: what an approval covers for future contributions,
-   how later revocation works for accepted and jointly edited content, and how
-   owner exclusions interact with author permissions without widening access.
+3. Private-item permission lifecycle: explicit grants, revocation, and
+   private/shared visibility transitions, including jointly edited content.
+   All non-private content follows timeline grants, including future accepted
+   contributions; there is no separate per-author audience approval or exclusion.
    Specify role changes, including promotion from Contributor to Co-Author, which
    changes editing rights even when the person could already view the material.
    Post-removal retention/export and contribution withdrawal are reopened,
@@ -750,7 +741,7 @@ These are intentionally not silently filled in by the SQL:
    remains. Define confirmation, progress, and failure/retry UX for the optional
    authorized project-wide acceptance of a trusted contributor's backlog.
    Timeline-owner-managed trust and approval/decline by any authorized owner/co-author are settled;
-   neither bypasses another author's audience permissions.
+   neither bypasses private-item permissions.
 5. External onward/audience permissions and any interaction between role grants
    and private-item editing authority. Timeline co-authorship is not a right to
    view or edit another author's unapproved private content.
@@ -793,6 +784,10 @@ These are intentionally not silently filled in by the SQL:
 
 ## Superseded earlier v3 rules
 
+- Per-author collaborator approval, per-author suggestion controls, and
+  per-recipient non-private exclusions are replaced by timeline-wide access to
+  all non-private content under the collaborator's role. Private grants remain
+  explicit and separate.
 - Project-wide roles are replaced by timeline-level roles with project bulk
   controls and explicit future-timeline grants.
 - Co-authorship does not require a project; eligible owner/co-author review is

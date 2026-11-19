@@ -90,3 +90,15 @@ Deferred: collaboration/public sharing, native clients, full offline sync,
 PWA-specific offline guarantees, AI extraction/biographies, fictional calendars,
 video/OCR, app-managed end-to-end encryption, archival restore, and bound-book
 layouts/ordering. Changes to these boundaries require an explicit decision.
+
+## Future collaboration feature: discussion notes/chat
+
+Defer in-app collaborator discussion notes or chat until after the current MVP
+scope. Owners and Co-Authors could use a contribution-linked conversation to
+consult before approving or declining a proposal. This discussion is separate
+from event memories/notes and does not itself approve or modify a contribution.
+
+Conversation access must respect the contribution's authorized audience and
+must not expose hidden/private material. Detailed participants, notifications,
+retention, and moderation behavior remain unspecified. No chat implementation
+or schema is required at this stage.
