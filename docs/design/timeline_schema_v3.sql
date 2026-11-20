@@ -11,12 +11,18 @@
 -- November 17 document supersedes this SQL's selective-transfer and settling-review
 -- design: whole timelines transfer only after pending proposals resolve and the
 -- recipient confirms collaborator roles; every sender archive freezes at handover.
--- Connected/paused/independent retained event placements, reconnection baselines,
+-- Owner-specific accepted event versions, role-directed updates, common baselines,
 -- and project bulk/future timeline grants are NOT modeled. Historical table/comment
 -- descriptions below are not current product requirements.
 -- November 18: timeline grants cover ALL non-private content, including future
 -- accepted contributions. Per-author collaborator consent and non-private
 -- share_exclusion behavior are superseded; explicit private-item grants remain.
+-- November 19: separate connection switches are superseded by destination roles
+-- for source-owner outgoing updates; original authorship remains. Same-owner
+-- placements stay live together, but cross-owner acceptance is independent.
+-- Editable pending proposal revisions, irrevocable snapshot grants, project
+-- entry/exit consent, and owner succession are NOT modeled. Immutable-payload
+-- comments below are historical and must not override the current document.
 -- Assumes Supabase auth.users and anon/authenticated roles exist.
 -- No app policies, RPCs, or grants are supplied: application access is fail-closed.
 -- Ownership, reviewer derivation, date calculation, archive exceptions, media

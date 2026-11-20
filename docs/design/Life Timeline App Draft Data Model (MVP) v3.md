@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 18, 2026
+Draft v3, November 6, 2026; updated November 19, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -19,7 +19,9 @@ represented by its timeline-local event structure.
 Organizing events containing related entries also need structural design.
 The SQL's item-selection transfer and settling-review archive structures are
 superseded by whole-timeline transfer with no pending proposals and an immediately
-frozen archive. Connected/paused/independent event states are not modeled.
+frozen archive. Owner-specific accepted event versions and role-directed updates
+between events in common are not modeled. The earlier separate connection-switch
+design is superseded; provenance and reconciliation still need structural design.
 Do not paste it into an existing development or production database.
 
 The running app still uses project-owned data and project-scoped drafts.
@@ -33,8 +35,9 @@ subject; projects provide collaboration spaces as well as optional organization.
 Real and fictional people are supported.
 Explicit placement of one event on multiple subjects' timelines within one
 account is MVP scope, especially for family histories. It is not automatic
-sharing. Explicit continuity of already placed events after transfer is the
-limited cross-account exception described in section 4, not general sync.
+sharing. Role-directed updates between events already in common after transfer
+are the limited cross-account mechanism described in section 4, not a general
+offline synchronization engine.
 Story plotting, fictional calendars, comparisons, and legacy activation remain
 outside this implementation slice. The app remains online-first with recoverable
 browser drafts, not an offline replica or a custom two-way sync engine.
@@ -47,6 +50,13 @@ browser drafts, not an offline replica or a custom two-way sync engine.
 - A Person is a subject described in a timeline, not automatically a user.
   Linking a Person to an account requires that account's consent. Linking alone
   grants no access, transfers no ownership, and changes no review authority.
+  The timeline owner can separately invite that account at a timeline role.
+  Being named in an event does not grant access to that event either.
+- Each project has exactly one owner; each timeline has exactly one owner.
+  A project may contain timelines owned by different users. Co-authorship is
+  not joint ownership. The proposed timeline has one Person/character subject;
+  group or relationship subjects such as "Our team" or "Our marriage" have not
+  been included.
 - Each content item records its original creator separately from
   its current editing authority. The timeline records its current owner.
   Attribution does not disappear when editing authority changes.
@@ -60,12 +70,13 @@ browser drafts, not an offline replica or a custom two-way sync engine.
   owner always requires transfer, even if the former owner remains a collaborator.
 - An event can have explicit placements on multiple subjects' timelines within
   one account. Those placements refer to one event, not independent event copies;
-  shared-fact edits update every placement. Person involvement alone creates no
+  authorized, accepted shared-fact edits update every placement. Person involvement alone creates no
   placement or audience permission. Ordinary sharing exposes permitted content
   to authorized users, not unrelated timelines or private layers.
-- Related copies have stable provenance identifiers and snapshot versions, not
-  an implicit live synchronization link. Place/topic data must also remain
-  independent where an archive or transfer requires it.
+- After ownership separates, events in common retain stable provenance and
+  owner-specific accepted versions. Updates follow destination timeline roles,
+  not an unconditional live link. Archives remain frozen copies. Place/topic
+  data must also remain independent where an archive or transfer requires it.
 
 ### One event on multiple timelines (MVP)
 
@@ -88,18 +99,33 @@ Different timelines in the same account may have different sharing audiences:
 any expansion needs explicit confirmation and applicable private-item permissions.
 Confirmation cannot substitute for authority the user does not have.
 
-Show a placed event once in a combined timeline view. Shared-fact edits affect
+Deduplicate timeline placements in a combined view. An intentional appearance in
+both its type band and its parent's detail view is not a duplicate event record.
+Authorized, accepted shared-fact edits affect
 every placement; removing one placement does not delete the event from the
 others. Placement does not transfer ownership or independently grant editing
 rights. The UI must distinguish removing a placement from deleting the event.
+
+While these timelines share an owner, an Owner's or authorized Co-Author's
+accepted edit updates the event on all that owner's placements. Contributor
+changes do so only after approval or owner-configured auto-approval. Each
+placement is not a separately approvable copy until ownership separates.
+If a collaborator is a Co-Author on one placement's timeline but a Reviewer or
+has no access on another timeline owned by that same owner, an edit authorized
+through the first timeline still updates the owner's one accepted event on all
+placements. An accepted/auto-approved Contributor proposal has the same effect.
+The owner's delegation or approval makes it part of the owner's accepted version;
+the other placement is not a separate approval boundary. This does not grant
+the collaborator access to that other timeline, its private items, or its
+metadata. Explain the shared-event effect when assigning roles or placements.
 
 Personal recollections, medical details, notes, and attachments are not
 automatically exposed through another placement. A child's birth appearing on
 their timeline must not reveal a parent's private childbirth account.
 The shared event/placement schema, audience checks, and private-detail boundaries
 must be designed and tested before enabling this feature. Cross-account event
-placement is not generally offered. Continuing connections for events already
-placed on retained timelines at transfer follow section 4.
+placement is not generally offered. Updates between owner-specific versions of
+events already placed on retained timelines at transfer follow section 4.
 
 ### Organizing events and their entries (MVP)
 
@@ -118,8 +144,45 @@ occurrence date or a claim that the entry lasted for the entire trip.
 
 Offer "Add an event or memory within this..." from the organizing event, and
 allow an existing entry to be associated with an organizing event when editing.
-Its detail view brings permitted contained entries together. Open text elaborates
-on the organizing event itself; a contained Memory is a separate entry.
+Its detail view shows permitted immediate children, not a flattened list of all
+descendants. Open a child to explore its own children. For example, India Trip
+can organize Bangalore Visit, which organizes Wedding, which organizes Wedding
+Memories. Open text elaborates on the organizing event itself; a contained
+Memory is a separate entry. Standalone events need no parent.
+
+#### Chronological bands, parent context, and tags
+
+Display content chronologically in distinct bands by event type, so employment,
+education, relationships, and other types can be viewed alongside one another.
+Each event has exactly one type, determining its band. An organizing event is
+not a separate type: any suitable event can provide context for related entries.
+A parent's children can have different types. The same Relationship event can
+appear inside a Trip's detail view and independently in the Relationship band,
+without bringing the Trip or its siblings into that band. Both presentations
+refer to the same accepted event, under the existing permission/version rules.
+
+Chronological overlap and explicit parent links are separate. A Trip span,
+shorter Bangalore span, and dated Wedding marker can be displayed simultaneously
+at their actual dates without needing parent links to produce visual nesting.
+They can also be explicitly linked as parent and child. Overlap alone creates
+no relationship. Do not copy a parent's dates into a child or infer a duration.
+
+Multiple optional topics/categories (possibly labeled tags) filter across types
+and parent groups. Filtering by "India 2001" can show a wedding, a job offer,
+and individual memories alone, in the chronological/type-band presentation.
+A shared tag neither creates a parent link nor grants access to hidden content.
+Final category/tag wording remains open.
+
+Indicate permitted undated child memories with an icon adjacent to the parent
+event's title, whether the parent is shown as a dated marker, within a date span,
+or without a date span. The icon opens those memories through the parent's
+immediate-child view without assigning them a position on the chronological axis.
+Do not reveal inaccessible memories through the icon.
+Undated memories
+without a parent appear in a clearly identified undated group in the Memories
+band, visually separate from dated content with no adjacent date scale implying
+when they occurred. Neither case fabricates a date. The parent-title icon
+resolves display of parented undated memories without a separate dated marker.
 
 This is a narrow organizing relationship, not general-purpose event linking.
 A job change and a residence change can be entered separately without an
@@ -127,11 +190,50 @@ explicit link between them. Arbitrary event-to-event relationships are outside
 MVP scope. Organizing an entry is also distinct from placing one event on
 multiple subjects' timelines; neither relationship implies the other.
 
+#### People, placement, and visibility
+
+When adding a child, suggest the parent's involved people for the user to
+confirm; do not automatically inherit them. Later changes to the parent's people
+do not silently change the child. Keep people involved, explicit timeline
+placements, and private/non-private visibility separate.
+
+For example, Mom can add a non-private memory to a shared Wedding while placing
+the memory only on her own timeline. Neither the parent link nor non-private
+status distributes that memory to the Wedding's other timeline placements.
 Containment does not grant visibility, transfer ownership, or automatically
 share private memories. Parent/entry visibility and derived counts must respect
-audience boundaries. Hierarchy depth, timeline expansion/collapse, ordering,
-and behavior when moving or removing an organizing event remain design details,
-not silently chosen defaults.
+audience boundaries, including hidden titles and links.
+
+#### Removal, transfer, and historical relationships
+
+Deleting an organizing event offers preservation of its children or removal of
+associated entries. Show an authorized selectable tree of all descendants, with
+individual include/exclude choices and select-all/clear-all shortcuts. Preview
+the affected entries and placements before confirmation. For affected events
+placed on multiple timelines owned by the user, let the user choose this
+timeline only or all their timelines; distinguish placement removal from event
+deletion. Other owners' accepted versions and frozen archives are unaffected.
+A preserved child whose parent is removed from that presentation becomes
+independent there; do not silently delete it or assign a new parent. Removing
+only one placement must not break the retained structure on other timelines.
+Detailed deletion/recovery rules, including final-placement handling, remain open.
+
+Whole-timeline transfer follows explicit placements, not a parent's descendant
+tree. Transfer entries placed on the transferred timeline, subject to existing
+private-content rules. Preserve parent links among included entries. A memory
+placed only on Mom's retained timeline does not transfer merely because its
+Wedding parent is on the child's transferred timeline. If the Wedding transfers
+without its Bangalore parent, show it independently; do not copy Bangalore or
+grant access to it implicitly.
+
+Retain an inactive historical relationship to support possible reconciliation,
+not an invisible active connection. Restoration requires explicit action and
+fresh permission, version/conflict, and structural checks; history grants no
+access or ownership and must not expose an inaccessible parent's metadata.
+A retained link alone does not preserve deleted event content. Recovery windows,
+deleted-content retention, permanent deletion, and detailed undo workflows are
+deferred. Parent-count/depth limits, cycle prevention, precise ordering and
+expansion controls, and dates outside a parent's span still need specification.
 
 ## 2. Sharing is live access, not ownership
 
@@ -217,8 +319,30 @@ to timelines that owner owns; another timeline owner's authorization is required
 for their timeline. Adding an existing timeline must preserve its access and
 offer any additional grants explicitly. Project ownership alone cannot override
 timeline ownership or private-item protection.
-Detailed authority for project-container management and mixed-owner projects
-remains open; a project handover never silently transfers its timelines.
+
+### Project entry, exit, and owner succession
+
+Adding another owner's timeline requires agreement from both the project owner
+and timeline owner. Either can remove that timeline from the project. Removing
+it changes organization only, not ownership, collaborator grants, trust,
+archives/snapshots, or event-in-common update relationships. It does not delete
+the timeline. Project ownership alone grants no content access.
+
+At timeline transfer, the new owner can keep it in the existing project or
+remove it; continuing collaborator access is decided separately. A project may
+therefore remain mixed-owner after a timeline transfer.
+
+Transferring the project itself requires the recipient's explicit acceptance.
+Notify the owners of contained timelines; they need not approve continued
+placement under the new project owner and retain their right to remove them.
+All timeline ownership and explicit collaborator grants remain unchanged.
+The former project owner retains no project-management role, but keeps authority
+over their separately owned timelines and any explicit collaborator roles.
+
+Disable future-timeline grant defaults on project handover until the new project
+owner and any affected timeline owners freshly authorize the applicable grants.
+Project succession never silently transfers contained timelines or widens access.
+Detailed invitation/confirmation and project-metadata visibility still need design.
 
 Authorship attribution and timeline ownership remain distinct. A co-author's
 direct edits must still use version checks and revision history; "no approval"
@@ -262,6 +386,8 @@ A departure notification offering to leave contributions or request removal is
 a candidate workflow only. Guaranteed deletion, handling jointly edited work,
 nonresponse, and export entitlement remain unresolved. Do not automatically
 delete accepted contributions or promise retained access based on this draft.
+The explicit transfer archive and owner-authorized snapshot grants in section 4
+are exceptions with agreed retention, not general authorship-based entitlements.
 
 ## 3. Contributions, review, and trust
 
@@ -272,8 +398,7 @@ audience, typed target, submitted payload, and base version where they change ex
 Targets include Person, event, note, and media, not just events.
 
 - Shared additions retain contributor attribution and enter the authorized
-  timeline review queue. New content
-  retains the contributor's original attribution. A contributor's own private
+  timeline review queue. A contributor's own private
   additions do not enter another user's approval queue.
 - Changes/replacements use that same authorized queue, not an original-creator
   veto. A co-author directly edits authorized shared work without a proposal.
@@ -296,15 +421,25 @@ The read-only Reviewer role is not a proposal-approval role.
 Once resolved, a proposal closes for everyone. Decisions must serialize so
 concurrent reviewers cannot apply it twice or overwrite its terminal outcome.
 The deciding actor is recorded separately from original authorship and the set
-of people eligible to review. Loss of reviewer access while a proposal is
-pending remains a workflow decision; approval is not self-review.
+of people eligible to review. A reviewer who loses authority cannot decide
+proposals under their former role; the Owner can still review pending work.
+Approval is not self-review.
 
 Submitting a proposal does **not** itself modify accepted content; manual or
 trusted automatic acceptance applies the change atomically. While pending, the contributor
 sees a clearly marked "Pending approval" preview; the reviewer sees before and
-after. The submitted payload is fixed; correcting it requires cancellation and
-a new request. A separately authored source item can remain on the contributor's
-own timeline, without giving recipients access to that timeline.
+after. While pending, the Contributor may revise the same proposal repeatedly;
+the queue shows its latest submitted version, not a new request for every edit.
+Approval must match the proposal revision actually reviewed as well as any
+accepted target's expected version. If the proposal changed, refresh before
+deciding; never approve unseen replacement text. Serialize revision and decision:
+if acceptance wins, later edits require a new proposal.
+
+After acceptance, a Contributor's edits to their own accepted shared contribution
+also follow the approval model, unless the Owner has enabled auto-approval.
+Owner/Co-Author edits and private-item editing follow their established rules.
+A separately authored source item can remain on the contributor's own timeline,
+without giving recipients access to that timeline.
 
 ### Review outcomes
 
@@ -324,6 +459,25 @@ Cancellation is allowed while pending. If acceptance, including auto-accept,
 wins a simultaneous race, cancellation cannot roll it back. The database must
 serialize the decision and return the actual outcome.
 
+### Role changes and pending proposals
+
+When the Owner promotes a Contributor to Co-Author, automatically approve and
+apply that person's eligible pending proposals on that timeline. This acceptance
+is authorized by the Owner's promotion, not self-approval by the new Co-Author.
+Show that effect as part of the role change. Unlike enabling future auto-accept
+trust alone, promotion includes the existing backlog.
+
+Validation, private-content authority, current proposal revisions, expected
+target versions, and concurrent-decision checks still apply. Do not silently
+overwrite newer content or report blocked proposals as accepted. Conflicted or
+otherwise blocked proposals remain unresolved for explicit handling, with the
+reason surfaced to an authorized reviewer.
+
+Downgrading or removing a collaborator does not discard their pending proposals.
+The Owner can still approve or decline submitted work. The changed role controls
+future actions; retained proposals neither restore the submitter's live access
+nor allow a downgraded Co-Author to keep reviewing under their former role.
+
 ### Trust and clearing a contributor's backlog
 
 The **timeline owner manages auto-accept trust for each contributor on that
@@ -342,6 +496,9 @@ alone does not silently accept the backlog. The optional bulk action covers
 pending proposals across authorized project timelines, not only the currently
 displayed page. It does not include unrelated timelines or override another
 owner's settings. Show the action's exact scope and any mixed trust settings.
+Only the Owner configures auto-approval; Co-Authors who tire of repeated reviews
+cannot independently enable it. Future contribution-linked discussion notes/chat
+may help reviewers consult, but are deferred and do not decide proposals.
 
 Trust and bulk acceptance do not grant content access or bypass timeline
 permissions, private-item protection, validation, expected versions, or the
@@ -357,7 +514,7 @@ Do not claim the entire backlog was accepted if some proposals could not be
 applied. Detailed batch confirmation, progress, and failure/retry UX still need
 design. Accepted contributions remain accepted if trust is later disabled.
 
-Ending a share does not silently discard pending submissions. The reviewer may
+Ending a share does not silently discard pending submissions. The Owner may
 resolve the submitted payload with restricted review context; the contributor
 does not regain live access. No later content is fetched from the former
 relationship and no relationship is reactivated. Exact UI/read access for an
@@ -389,9 +546,10 @@ Before handover completes:
    carry over, including any continuing role for the sender. Unconfirmed access
    does not carry over. Access can therefore begin at handover, not only through
    a new share afterward.
-3. Confirm the shared-event connection policy below and prepare the authorized
-   frozen archive and retained media.
-4. Commit ownership, confirmed access, event-connection state, and archive
+3. Explain how confirmed roles govern updates to events in common, and prepare
+   the authorized frozen archive and retained media. The recipient may keep the
+   timeline in its current project or remove it without changing access.
+4. Commit ownership, confirmed access, owner-specific event versions, and archive
    atomically. Recheck versions and the absence of pending proposals; new
    submissions or edits must not slip in after confirmation and invalidate it.
    The exact short-lived transfer gate/reconfirmation workflow needs design.
@@ -399,7 +557,9 @@ Before handover completes:
 The sender loses ownership and any live access not explicitly confirmed.
 Role confirmation covers non-private content, not implicit private-item access.
 Project ownership and the disposition of mixed-owner project
-containers remain separate from this timeline transfer.
+containers remain separate from this timeline transfer. Confirmation concerns
+current collaborators on this timeline, not everybody in the containing project.
+Other project participants gain no access merely through project membership.
 
 ### Frozen archive at every transfer
 
@@ -420,48 +580,85 @@ snapshot with the current live timeline to spot changes. Comparison never grants
 access to later private/restricted material and is not automatic restoration or
 rollback. The detailed comparison UI remains to be designed.
 
-### Events also placed on retained timelines
+### Explicit snapshots for former collaborators
+
+Co-Author/Contributor status does not automatically grant an archive on loss of
+access. For example, Parent1 receives the sender archive when transferring a
+child's timeline; Parent2 does not receive one merely from being a Co-Author.
+Parent1 cannot bypass the child's removal of Parent2 by sharing that archive.
+
+When the new owner removes/does not continue a collaborator's live access, offer
+a separate explicit choice to let that person retain a read-only snapshot.
+Once the new owner confirms this grant, **snapshot retention is irrevocable**:
+they cannot later rescind it. Explain permanence before confirmation.
+The grant covers only the authorized content frozen at that point, excluding
+private material without appropriate permission. It includes no later changes,
+editing rights, or automatic onward-sharing/publication rights.
+This is not blanket permission for the sender to share their archive with others.
+
+Snapshot storage/export/deletion mechanics still need design. The app must not
+claim that copies already downloaded can be recalled, or infer legal reuse rights
+from an app retention grant. A frozen snapshot never serves as a live event view.
+
+### Events in common across ownership boundaries
 
 A birth shared between parent/child timelines, a trip on partners' timelines,
 or a fictional event on several character timelines must not disappear from a
 retained timeline because another placement is transferred.
-Transfer offers one timeline-level connection policy for affected events, not
-an event-by-event review. Events found only on the transferring timeline simply
-transfer. A continuing collaborator role alone does not authorize synchronization.
+Before transfer, same-owner placements use one accepted event. After ownership
+separates, each owner has an independently accepted version with common provenance.
+There is no longer one live event forced to match across owners. Events found
+only on the transferring timeline simply transfer.
 
-| State | Meaning |
+Collaborator roles express trust and govern updates; do not make users configure
+a second, independent connection-permission switch. For an update from User1's
+accepted event version into User3's timeline, use **User1's current role on the
+destination timeline**:
+
+| Source owner's role on destination | Incoming change |
 | --- | --- |
-| Connected | Authorized placements use one live event under mutually agreed access/editing rules; shared-fact updates reach those placements. |
-| Paused connection | Each side retains its authorized handover version; changes do not flow, but common event identity and the common handover version are retained for possible reconciliation. |
-| Made independent | An explicit separation. Versions evolve independently with no automatic reconnect in MVP. |
+| Co-Author | Can apply directly, subject to authorization, version/conflict checks, and private-item boundaries. |
+| Contributor | Becomes a proposal; destination Owner/Co-Authors may accept or decline, or Owner-configured trust may auto-approve it. |
+| Reviewer | No incoming edits or proposals; source owner may read permitted destination updates but cannot change that timeline. |
+| No access | No new updates flow through that revoked relationship in either direction; independently retained event versions remain. |
 
-If continued collaboration/connection is not authorized, **pause rather than
-irreversibly split by default**. A new recipient need not understand or resolve
-every shared event just to accept a timeline. Explain that changes will not
-update the other person's timelines unless both agree to reconnect.
-Making events independent is a separate explicit choice, not a consequence of
-declining editing rights. It has no automatic undo; permanent impossibility of
-future reconciliation is not claimed.
+Reverse-direction updates follow the other owner's role on their destination,
+not the first direction's role. For example, a Reviewer can see a timeline's
+updates, but those updates do not overwrite their own version merely because
+they can see them: applying there follows the sender's role on that timeline.
+Explicit revocation must not be bypassed through retained provenance. Handling
+conflicting residual grants and alternate multi-party routes still needs design.
 
-Later, offering collaboration can include a separate "Reconnect shared events"
-action with both sides' authorization:
+Example: Mom revises "We went to Disneyland!" on her version. Dad declines the
+proposal on his transferred timeline and keeps his accepted version; Kid1
+accepts it on theirs. Neither decision changes the others' accepted versions.
+Declining one proposal does not itself revoke collaboration or future proposals.
 
-- Neither side changed: reconnect without choosing between different content.
-- One side changed: show the proposed update for confirmation.
-- Both sides changed: preserve both and require reconciliation before reconnecting.
+### Accepted outgoing updates and attribution
 
-Unresolved events can stay paused while others reconnect. Private additions and
-new audiences must not leak through comparison or reconnection. Neither timeline
-owner automatically controls the other's placement or can delete the event
-everywhere. Later loss of collaboration needs an explicit disconnect workflow
-that preserves independently retained history without granting ongoing access.
+If User2 changes User1's version through authorized Co-Author editing, User1's
+approval, or configured auto-approval, it becomes part of User1's accepted version.
+An outgoing update from that version to User3 follows User1's role on User3's
+timeline, not User2's role. User3 independently applies or reviews it under that
+relationship. Ignoring a pending proposal is not acceptance.
 
-Reconciliation tooling may be deferred initially, but stable common identities,
-authorized baseline versions, and paused-state provenance must be designed now.
-Version/common-baseline tracking must remain correct if reconnection tooling is
-introduced later. Exact multi-party/multiple-transfer rules remain open.
-This limited transfer-continuity mechanism is distinct from ordinary unsharing,
-which does not create copies for recipients without their own retained placement.
+It becomes **User1's outgoing update, not User1's authorship**. Preserve User2's
+attribution and review/decision history. Neither acceptance nor forwarding grants
+access to private material. Destinations may therefore have different accepted
+versions of the same event in common, and updates must preserve local changes.
+
+Remember common event identity, accepted revision lineage, and handover/common
+baselines without granting live access through those identifiers. Prevent loops,
+duplicate proposals, and replayed applications when an accepted update travels
+through several owners or returns to its origin. Detailed routing, later catch-up
+after restored access, conflict reconciliation, and multi-party/repeated-transfer
+behavior remain open; do not silently merge or reconnect divergent versions.
+
+Archives always stay frozen. An event on a different timeline the sender still
+owns is an active record, not the sender's transfer archive. Updating that active
+record does not imply access to the transferred timeline. Ordinary unsharing
+still creates no copy for someone without an independently retained placement
+or an explicit archive/snapshot entitlement.
 
 ## 5. Flexible dates: facts, uncertainty, and placement
 
@@ -578,6 +775,7 @@ technical type. Moment and Memory are interchangeable entry points matching
 users' mental models. They can share fields/capabilities, use different prompts,
 and switch without loss of content or date meaning.
 
+Each event has exactly one type, determining its chronological display band.
 Types supply defaults, relevant fields, and prompts; they do not dictate
 precision or prohibit spans. Users do not build custom event types in the MVP.
 Detailed type-specific fields and screens will be supplied later.
@@ -591,7 +789,7 @@ does not automatically make it private.
 Every event also has a required Title, separate from type and additional text,
 with a maximum of 200 characters in the current contracts and structural draft.
 
-Separately, optional multiple topics/categories organize and filter an event:
+Separately, optional multiple topics/categories (possibly labeled tags) organize and filter an event:
 Work, Family, Travel, etc. Users can add these labels. For example, a Residence
 can have Work and Family topics. Do not label both concepts "Category."
 The SQL retains optional many-to-many topics; starter topic labels and final
@@ -628,8 +826,12 @@ Trip or Job.
 Its `transfer_item`, `transfer_review`, and `settling_reviews` structures retain
 the superseded selective-transfer/pending-review design. They must be redesigned
 or removed, not treated as an alternative implementation of section 4.
-Connected/paused/independent event continuity and reconciliation baselines are
-missing too. Historical SQL comments do not override the revised product rules.
+Owner-specific accepted versions, role-directed outgoing updates, common
+baselines, and loop/duplicate suppression are missing too. The former independent
+connection-switch model is superseded. The single immutable submitted payload
+also predates editable, revision-checked pending proposals. Project succession
+and explicit irrevocable snapshot grants need structural support.
+Historical SQL comments do not override the revised product rules.
 The historical `share_exclusion` structure and author-audience consent comments
 also predate whole-timeline non-private access; do not implement those exclusions
 as an alternative to the current rule. Explicit private-item grants remain needed.
@@ -643,7 +845,7 @@ as an alternative to the current rule. Explicit private-item grants remain neede
 | place, topic, event_topic, event_person | Structured location, optional labels, participant links. |
 | share_access, share_exclusion, share_private_authorization | Historical sharing structures; non-private exclusions are superseded, while private-item authorization remains required. |
 | review_trust | Historical reviewer-specific trust; revised trust is owner-managed per timeline. |
-| contribution | Stable typed proposals, target/version, submitted snapshot, status and decision metadata. |
+| contribution | Historical proposal structures; editable pending revisions and revision-checked approval still need design. |
 | ownership_transfer, transfer_item, transfer_review | Historical transfer structures; selective transfer and captured pending-review bookkeeping are superseded. |
 | change_log, mutation_receipt | Private revision audit and replay-safe mutation results. |
 | media_asset | Private immutable storage-object identity and readiness; retained references protect snapshots. |
@@ -671,7 +873,8 @@ fail-closed scaffolding, not completed security.
   membership alone is not sufficient permission. Preserve original attribution.
 - On collaborator removal, revoke the affected live grant. Do not promise
   authorship-only retention/export or withdrawal while those decisions remain
-  open; do not expose others' work through snapshots, diff context, or media.
+  open. Preserve explicitly granted irrevocable snapshots and authorized sender
+  archives, without exposing others' private work through diff context or media.
 - RLS must protect accepted content, private layers, Person/place metadata,
   proposal previews, before/after audit data, notifications, and archive assets.
 - Private visibility requires explicit per-item/per-recipient authorization;
@@ -682,11 +885,17 @@ fail-closed scaffolding, not completed security.
   Lock/version-check targets and share state; prevent author/owner/version forgery.
 - Apply review result, content update, links, version increment, log, and
   notifications atomically. No pending review may carry through transfer.
+- Version pending proposal edits independently from accepted content. A review
+  decision must match both the reviewed proposal revision and applicable target
+  version. Keep one current queue entry, not one request per correction.
+- Route event-in-common changes as source-owner outgoing updates according to
+  destination roles/trust. Preserve original authorship, local accepted versions,
+  private boundaries, and source lineage; prevent cycles and duplicate application.
 - Use actor-scoped stable request IDs, payload fingerprints, and durable
   acknowledged results. Replays return the prior result; changed content cannot
   reuse a request identity. Stale versions preserve user work.
 - Transfer changes ownership/access only after pending proposals are resolved,
-  recipient-confirmed grants, connection policy, and authorized frozen archive
+  recipient-confirmed grants, owner-specific event versions, and authorized frozen archive
   content/asset retention are ready. Upload steps may be staged, but the visible
   handover is atomic; failure must not produce a half-transferred account.
 - Media references are private storage keys, not public URLs or cached signed
@@ -723,22 +932,25 @@ trigger, or partial account-transfer implementation is included in the SQL.
 These are intentionally not silently filled in by the SQL:
 
 1. Type-specific forms/prompts, starter topics, sharing/transfer confirmation UX.
-2. Project-container administration, including mixed-owner projects, who may
-   add/remove timelines, and project-owner succession. Timeline roles and access
-   persist through project moves. Define future-grant activation and bulk-action
-   scope/confirmation without overriding any timeline owner's authority.
+2. Detailed project invitations, project-metadata visibility, future-grant
+   activation and bulk-action confirmation. Single ownership, mixed timeline
+   owners, mutual consent to add, either owner's right to remove, and project
+   succession are settled in section 2. Timeline access persists through moves.
 3. Private-item permission lifecycle: explicit grants, revocation, and
    private/shared visibility transitions, including jointly edited content.
    All non-private content follows timeline grants, including future accepted
    contributions; there is no separate per-author audience approval or exclusion.
-   Specify role changes, including promotion from Contributor to Co-Author, which
-   changes editing rights even when the person could already view the material.
+   Contributor-to-Co-Author promotion accepts eligible pending proposals;
+   downgrade/removal preserves them for Owner review, as settled in section 3.
    Post-removal retention/export and contribution withdrawal are reopened,
    including jointly edited material, contractual boundaries, and the candidate
-   departure-notification workflow. No automatic retention entitlement is settled.
-4. Shared review lifecycle: eligibility changes while pending, contributors' edits
-   to their own accepted contributions, and what happens if no authorized reviewer
-   remains. Define confirmation, progress, and failure/retry UX for the optional
+   departure-notification workflow. No automatic authorship-based retention is
+   settled; the explicit irrevocable snapshot grant is a separate agreed exception.
+4. Shared review lifecycle: detailed handling of blocked promotion-time proposals
+   and private review context after access changes. Role-change effects,
+   editable pending proposals, and continued
+   approval for Contributors' edits after acceptance are settled. Define
+   confirmation, progress, and failure/retry UX for the optional
    authorized project-wide acceptance of a trusted contributor's backlog.
    Timeline-owner-managed trust and approval/decline by any authorized owner/co-author are settled;
    neither bypasses private-item permissions.
@@ -751,7 +963,7 @@ These are intentionally not silently filled in by the SQL:
    are settled. Archives freeze immediately; no captured review queue carries over.
 7. Birth-date edits/account-link consent presentation and retaining another
    creator's private content with explicit permission.
-8. Retained pending proposals when an individual item is hidden, and what the
+8. Retained pending proposals when private-item access changes, and what the
    former recipient can see after unsharing without regaining live access.
    Recovery/access to a contributor's own private additions after unsharing
    also needs an explicit workflow; no copy-on-unshare behavior is assumed.
@@ -761,14 +973,25 @@ These are intentionally not silently filled in by the SQL:
    RLS/storage policies, archive freeze rules, and focused concurrency tests.
 10. Multi-timeline event identity/placement structures, permission-aware audience
     expansion, and private note/media boundaries. Define ownership and behavior
-    for conflicting timeline roles, removal of the final placement, and
-    cross-account event editing authority. Connected/paused/independent transfer
-    states are agreed; durable identities/baselines, safe reconnection, later
-    disconnection, and multiple-party behavior still need detailed design.
-11. Organizing-event/entry structures and workflows: hierarchy depth and cycle
-    prevention, ordering and expanded/collapsed display without duplicate entries,
-    parent/entry audience boundaries, and move/removal/transfer behavior.
-    Organizing related entries is MVP scope; general-purpose event linking is not.
+    for removal of the final placement and
+    cross-account event update routing. Same-owner live events and independent
+    cross-owner acceptance under source-owner destination roles are settled.
+    Same-owner mixed-role editing follows the owner's accepted event across
+    placements without granting access to other timelines. Define residual grants after revocation,
+    common baselines, catch-up/conflict review after restored access, and
+    loop/duplicate prevention across multi-party or repeated transfers.
+11. Organizing-event/entry implementation: parent-count/depth limits, cycle
+    prevention, precise ordering/expansion controls, and dates outside a parent's
+    span. Section 1
+    settles type bands, immediate-child drill-down, explicit parent links versus
+    chronological overlap, tag filtering, suggested rather than inherited people,
+    independent placements, undated-memory display (parent-title icon for parented
+    memories; separate undated group for parentless memories), and placement-based
+    transfer. Permission enforcement still needs structures and tests.
+    Deletion selection and inactive relationship history are agreed directions;
+    deletion/recovery workflows, final-placement handling, retention windows,
+    and permanent deletion remain open. Organizing entries is MVP scope;
+    general-purpose event linking is not.
 
 ## Superseded v2 rules
 
@@ -796,6 +1019,13 @@ These are intentionally not silently filled in by the SQL:
 - Item-by-item transfer selection and pending-review carryover are replaced by
   whole-timeline handover with no pending proposals, recipient-confirmed access,
   and a frozen archive at every transfer.
-- No editing grant does not imply irreversible shared-event separation:
-  affected retained placements pause by default unless connection is authorized
-  or independence is explicitly chosen.
+- Pending proposals are editable under one request with revision-checked approval,
+  replacing immutable submissions that required cancellation for corrections.
+- Projects can contain differently owned timelines; project entry/exit and owner
+  succession preserve timeline ownership and explicit collaborator grants.
+- Former collaborators have no automatic archive, but the new owner may explicitly
+  grant irrevocable read-only snapshot retention without onward-sharing rights.
+- The separate connected/paused/independent permission switch is replaced by
+  role-directed updates between owner-specific accepted versions after transfer.
+  Same-owner placements remain one live event. Source-owner outgoing authority
+  does not erase original authorship or authorize private-content propagation.
