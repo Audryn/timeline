@@ -1,9 +1,11 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 19, 2026
+Draft v3, November 6, 2026; updated November 20, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
+Supporting reference: [Workflow inventory](workflow-inventory.md).
+Tracked work: [GitHub Issues](https://github.com/Audryn/timeline/issues).
 
 ## Status and scope
 
@@ -12,14 +14,15 @@ a **structural design draft**, not a migration, runnable application backend,
 or completed authorization implementation. It deliberately grants no application
 access. It also predates the project collaboration decisions below: project
 timeline-level roles, private-item authorization, and shared review
-queues still need a structural redesign. Departure retention remains unresolved.
+queues still need a structural redesign. November 20 private-item retention,
+joint-edit consent/override, event-note, and export rules are not modeled.
 Its single-reviewer fields do not model those rules.
 The explicit multi-timeline event placements now required for MVP are also not
 represented by its timeline-local event structure.
 Organizing events containing related entries also need structural design.
 The SQL's item-selection transfer and settling-review archive structures are
-superseded by whole-timeline transfer with no pending proposals and an immediately
-frozen archive. Owner-specific accepted event versions and role-directed updates
+superseded by whole-timeline transfer with pending proposals resolved before
+handover and an immediately frozen archive. Owner-specific accepted event versions and role-directed updates
 between events in common are not modeled. The earlier separate connection-switch
 design is superseded; provenance and reconciliation still need structural design.
 Do not paste it into an existing development or production database.
@@ -38,9 +41,39 @@ account is MVP scope, especially for family histories. It is not automatic
 sharing. Role-directed updates between events already in common after transfer
 are the limited cross-account mechanism described in section 4, not a general
 offline synchronization engine.
-Story plotting, fictional calendars, comparisons, and legacy activation remain
+Story plotting, BCE dates, fictional calendars, comparisons, and legacy activation remain
 outside this implementation slice. The app remains online-first with recoverable
 browser drafts, not an offline replica or a custom two-way sync engine.
+
+### Possible future extensions
+
+Historical timelines could use the same chronological bands, spans, markers,
+parent context, and tags. Non-person subjects such as a city, organization, or
+historical period, and user-defined event types are possible future extensions,
+not additions to the MVP or changes to its primary personal/character-history
+purpose. The MVP still has one Person/character subject and app-defined types.
+
+Custom types could initially reuse common event fields without requiring a
+custom form-builder; exact capabilities remain to be decided. Subject
+generalization should not implicitly alter ownership or collaborator rules.
+Future date support must be able to accommodate BCE and fictional calendars;
+readiness requirements are recorded in section 5 without enabling those inputs.
+
+### Decision and workflow tracking
+
+This document is the canonical source of product rules. GitHub Issues track
+unresolved decisions and implementation separately: design decisions #1-#14,
+implementation #15-#25, and deferred capabilities #26-#31, categorized with
+`design-decision`, `implementation`, and `future` labels. Closing a decision
+issue means the decision is documented, not that the feature is implemented.
+Resolve relevant design prerequisites before implementing and verifying behavior.
+
+The linked workflow inventory enumerates planned user flows W01-W47, including
+cross-cutting save, conflict, recovery, and access-change paths. It is a
+supporting checklist, not a separate authority or a claim of implemented behavior.
+The historical-subject, custom-type, and BCE-readiness ideas were discussed after
+the initial issue list was created; no separate issues for those additions have
+yet been created.
 
 ## 1. Identity, ownership, and provenance
 
@@ -55,8 +88,8 @@ browser drafts, not an offline replica or a custom two-way sync engine.
 - Each project has exactly one owner; each timeline has exactly one owner.
   A project may contain timelines owned by different users. Co-authorship is
   not joint ownership. The proposed timeline has one Person/character subject;
-  group or relationship subjects such as "Our team" or "Our marriage" have not
-  been included.
+  group or relationship subjects such as "Our team" or "Our marriage" are not
+  included in the MVP. Future non-person subjects are discussed under scope.
 - Each content item records its original creator separately from
   its current editing authority. The timeline records its current owner.
   Attribution does not disappear when editing authority changes.
@@ -260,8 +293,9 @@ do not make private content visible or grant direct editing of it.
 Item, attachment, Person, place, search, count, history, and notification queries
 must preserve these boundaries; authorization is not just a UI filter.
 
-Private content remains accessible to its creator/current independent editing
-owner and any explicitly authorized recipients, subject to their sharing role.
+Private content remains accessible to its creator and any explicitly authorized
+recipients, subject to their sharing role. Timeline ownership does not transfer
+creator-controlled privacy authority.
 For private items, visibility permission alone does not grant direct editing
 authority; the co-author view-implies-edit rule below applies to shared
 content only. Timeline ownership, a Contributor role, co-authorship,
@@ -276,15 +310,17 @@ to its authorized reviewer.
 
 The owner can revoke a timeline share. Shared-item visibility cannot be narrowed
 per recipient; private-item permissions remain separately controlled.
-**Unsharing removes live viewing/contribution access and creates no recipient
-copy.** It cannot erase previous downloads, independent copies, or archives.
+**Unsharing removes live viewing/contribution access and creates no automatic
+timeline copy.** Creators retain their own private additions, and the Owner may
+explicitly grant a frozen snapshot as described below.
+It cannot erase previous downloads, independent copies, or archives.
 This supersedes v2's copy-on-disconnect rule for ordinary sharing.
 
 Collaborators cannot invite others merely by being Co-Authors, Contributors, or
 Reviewers. The timeline owner can add collaborators to all non-private timeline
 content without fresh approval from its authors. This grants app access, not
-copyright ownership or unrestricted publication/reuse rights.
-External onward sharing and transfer/archive consent remain separate workflows.
+legal ownership of their work. Export and external distribution follow the
+trust and legal-scope rules below; transfers remain a separate workflow.
 
 ### Timeline roles and project bulk controls
 
@@ -365,29 +401,120 @@ grants direct Co-Author editing rights over it.
 This simplification does not expose pending proposals, private revision history,
 or private attachments to every reader. Review queues and before/after context
 still require appropriate review authority and private-content checks.
-Authorship attribution remains intact; retention, withdrawal, and rights to
-publish jointly edited material remain separate unresolved questions.
+Authorship attribution remains intact. Privacy changes, deletion consent,
+retention, and export follow the rules below, not ordinary edit approval.
 
-### Removal, retention, and withdrawal: reopened
+### Event-attached notes
+
+Provide an explicit **Add note** action on an existing event. A note is separate
+content, not a new event type, a Memory event, or an edit to the event's details.
+It has its own author and a visibility choice: **Only me** or **Timeline
+collaborators**. Examples include "Look up this address" or a clarification
+about moving between two residences during a period.
+
+Owner/Co-Author notes can be added without editing the parent event. A
+Contributor's shared addition follows the proposal rules; a creator-only
+private note or event is added and edited directly, without Owner approval.
+Private notes are hidden even from the timeline Owner unless explicitly
+authorized. Adding a note does not privatize the parent event or create an
+entry in an event-type band. A shared note respects its timeline audience;
+attachment alone does not distribute it to the parent's other placements.
+This lightweight event-note feature is required; proposal-linked discussion/chat
+remains separately deferred. Detailed note forms and presentation need design.
+
+### Creator-controlled privacy and jointly edited content
+
+Privacy-status changes originate from the item's creator, even if the timeline
+Owner previously approved that item. Approval does not transfer privacy control.
+For example, Mom may add her own private Memory to Daughter's Birth event
+without a proposal. Daughter owns the timeline, but cannot view that Memory
+merely through ownership. The shared Birth event remains unchanged.
+
+Making previously shared content private restricts future in-app access, not
+prior exposure. Explain that collaborators may already have read, copied,
+screenshotted, or exported it. The app cannot recall those copies, and this
+expectation does not establish legal redistribution rights.
+
+Privatizing or deleting jointly edited content requires a consent request to
+every other eligible joint editor: current Co-Authors and current Contributors
+whose accepted work forms part of the item. Current access and the eligible
+role are required; removed collaborators and Reviewers have no consent/veto
+right based solely on past authorship. This is a specific consent right for
+Contributors, not general proposal-approval authority.
+
+Notify eligible editors and allow each to approve or decline. An explicit
+decline notifies the Owner. Without an override, all required approvals must
+be received before applying the request; existing visibility/content remains
+unchanged while unresolved. Default nonresponse timeout is **three days**.
+Only after that timeout, offer resend or explicit Owner override of a
+nonresponse; never silently approve. The Owner may also explicitly override
+a decline once received, so consent is a chance to
+object, not a permanent veto. Record overrides and notify affected editors.
+For privacy changes, Owner override resolves joint-edit consent only; the
+request must still originate from the creator. It grants no access to another
+creator's private material.
+
+Removing an inactive collaborator's timeline access is a separate Owner action,
+not an automatic consequence of nonresponse. Project removal does not revoke
+timeline access. A future configurable timeout is deferred. Request/version
+checks, attribution rules for superseded accepted edits, eligibility changes
+during a request, and resend/override UI still need
+implementation design. These requests are distinct from ordinary proposals,
+which any authorized Owner/Co-Author can approve without unanimity.
+
+### Removal, retention, and withdrawal
 
 The timeline owner can remove a collaborator, revoking the access that grant
 provided. It does not erase another independently authorized timeline or archive.
-The earlier guarantee of authorship-only read access/export after removal is
-**not settled**. A small edit must not provide a way to export somebody else's
-whole timeline, record snapshots, or surrounding text after access is revoked.
+Accepted shared work remains; departure does not automatically withdraw or
+delete it. A removed collaborator cannot unilaterally retract jointly edited
+work or retain approval/veto rights. Disputes outside these app permissions are
+for participants to resolve outside the app.
 
-Contribution withdrawal is also reopened. Access revocation, deleting material,
-retaining/exporting it, and permission to reuse/publish it are separate issues.
-Authorship or an app role does not establish a right to retract or reuse content;
-collaborator agreements may affect those rights. The app does not interpret
-contracts or guarantee that previously read/exported material cannot be reused.
+A creator retains access to their own private events and notes after revocation,
+and may export those retained private items. This does not retain the parent
+event or surrounding timeline content. Carol's private note remains accessible
+while Bob's event is no longer viewable. Parent links become inactive historical
+relationships and must not reveal inaccessible titles, dates, media, or later
+changes. Carol's own text remains her content even where it mentions the event.
+The view for these orphaned private items is still to be designed.
 
-A departure notification offering to leave contributions or request removal is
-a candidate workflow only. Guaranteed deletion, handling jointly edited work,
-nonresponse, and export entitlement remain unresolved. Do not automatically
-delete accepted contributions or promise retained access based on this draft.
-The explicit transfer archive and owner-authorized snapshot grants in section 4
-are exceptions with agreed retention, not general authorship-based entitlements.
+Pending proposals remain in the Owner's queue after downgrade/removal; retention
+of submitted work does not restore the submitter's access. Exact submitter-facing
+access to retained proposals remains open.
+
+At revocation, offer the Owner an explicit **Allow this person to keep a frozen
+copy of the timeline? Yes / No** choice. Yes grants the authorized read-only
+snapshot described in section 4; No creates no new timeline copy. Neither choice
+removes the creator's retained private additions or recalls prior copies.
+There is no automatic authorship-based entitlement to retain/export jointly
+edited work or the timeline. Private-item retention, explicit snapshots, and
+sender archives are specific exceptions, not rights acquired by making a small edit.
+
+### Export, distribution trust, and legal scope
+
+The live-timeline export command is available only to Owners and Co-Authors,
+not Contributors or Reviewers. Export includes authorized non-private content
+and may include the exporter's own private items. Exclude private content
+belonging to other collaborators, even when the exporter has permission to view
+it. Export authority does not grant otherwise missing content access.
+
+Creators may export their retained private additions after losing timeline
+access. Explicitly granted former-collaborator snapshots are read-only in-app,
+with no export command. Detailed export formats and sender-archive export
+behavior still need specification.
+
+Trust to export implies trust to handle and distribute the content with the
+required care; there is no separate in-app onward-sharing consent layer for
+exports. This does not authorize inviting collaborators or transferring a
+timeline, which remain Owner-controlled actions. Future public-link features
+are not decided by this rule.
+
+State alongside sharing/export permissions: **App permissions control access
+and actions within Timeline. They do not establish or transfer copyright,
+ownership of intellectual property, or other legal rights. Users are responsible
+for ensuring they have the rights needed to use or distribute content.**
+Legal rights, contracts, and external disputes are outside the app's scope.
 
 ## 3. Contributions, review, and trust
 
@@ -452,8 +579,9 @@ without giving recipients access to that timeline.
 | Outdated | Close without applying because its target/version is no longer valid. A new proposal is required. |
 
 Accepted contributions cannot be undone by cancelling their original proposal.
-Corrections use new changes/proposals under the actor's role. A separate right
-or workflow to withdraw accepted material remains reopened, as described above.
+Corrections use new changes/proposals under the actor's role. Privatization,
+deletion consent, and departure follow section 2; cancellation provides no
+separate right to withdraw accepted jointly edited material.
 
 Cancellation is allowed while pending. If acceptance, including auto-accept,
 wins a simultaneous race, cancellation cannot roll it back. The database must
@@ -587,16 +715,17 @@ access. For example, Parent1 receives the sender archive when transferring a
 child's timeline; Parent2 does not receive one merely from being a Co-Author.
 Parent1 cannot bypass the child's removal of Parent2 by sharing that archive.
 
-When the new owner removes/does not continue a collaborator's live access, offer
+When the timeline Owner removes/does not continue a collaborator's live access, offer
 a separate explicit choice to let that person retain a read-only snapshot.
-Once the new owner confirms this grant, **snapshot retention is irrevocable**:
+Once the Owner confirms this grant, **snapshot retention is irrevocable**:
 they cannot later rescind it. Explain permanence before confirmation.
 The grant covers only the authorized content frozen at that point, excluding
 private material without appropriate permission. It includes no later changes,
 editing rights, or automatic onward-sharing/publication rights.
 This is not blanket permission for the sender to share their archive with others.
 
-Snapshot storage/export/deletion mechanics still need design. The app must not
+The snapshot is read-only in-app, with no export command. Snapshot storage and
+deletion mechanics still need design. The app must not
 claim that copies already downloaded can be recalled, or infer legal reuse rights
 from an app retention grant. A frozen snapshot never serves as a live event view.
 
@@ -744,6 +873,34 @@ are deferred; their independent epochs are not automatically comparable.
 Approximate ages must respect uncertain birth dates; no exact birth day is
 invented and age is never stored.
 
+### Future calendar readiness, not current calendar support
+
+Keep the current implementation limited to Gregorian CE years 1-9999.
+BCE dates and fictional calendars remain deferred, but the eventual model and
+contracts must preserve an extension boundary rather than treat Gregorian
+components and SQL `DATE` as the universal representation:
+
+- Record explicit calendar identity with structured dates; existing dates have
+  a defined Gregorian interpretation, not a calendar inferred from wording.
+- Interpret and validate components, eras, precision, seasons, and derived ages
+  under that calendar. Define BCE era/year-zero conventions before enabling
+  support; merely allowing negative years is not a sufficient design.
+- Preserve authored wording and calendar-specific components separately from
+  calculated ordering/uncertainty bounds. A future fictional date need not fit
+  Gregorian months or a PostgreSQL `DATE`.
+- Associate derived coordinates with an explicit comparison domain. Sort dates
+  together only where they share a chronology or have an explicitly defined
+  mapping; independent fictional epochs are not automatically comparable.
+- Keep calendar definitions stable or versioned so edits to a definition cannot
+  silently reinterpret saved dates or frozen archives.
+
+The historical SQL's positive-year and Gregorian month/season constraints and
+`earliest_day`/`latest_day` DATE columns describe its current scope, not a
+universal future date format. Future support will require revised contracts,
+storage, validation, and calculations. Do not loosen current checks or build
+a calendar engine merely to reserve this boundary. Exact calendar schemas,
+definitions, mapping rules, and supported ranges remain future design work.
+
 ### Birthday age markers on the timeline
 
 When the timeline subject has a specified exact birthdate (day, month, and
@@ -872,9 +1029,17 @@ fail-closed scaffolding, not completed security.
   Recheck role/access and proposal state atomically when deciding a proposal;
   membership alone is not sufficient permission. Preserve original attribution.
 - On collaborator removal, revoke the affected live grant. Do not promise
-  authorship-only retention/export or withdrawal while those decisions remain
-  open. Preserve explicitly granted irrevocable snapshots and authorized sender
-  archives, without exposing others' private work through diff context or media.
+  general authorship-only retention/export or unilateral withdrawal. Preserve
+  creator-private additions, explicitly granted irrevocable snapshots, and
+  authorized sender archives without exposing inaccessible context or media.
+- Privatization requests originate from creators. Joint-edit consent uses
+  current eligible Co-Authors/Contributors with accepted work, not every reader
+  or past author. Version-check the request, approvals, and any explicit Owner
+  override; record the decision and notify affected editors. Timeout alone
+  never applies a privacy change or deletion.
+- Enforce export restrictions server-side, including exclusion of others'
+  private content even if viewable. Retained private-item export must not fetch
+  inaccessible parent context; granted collaborator snapshots have no export.
 - RLS must protect accepted content, private layers, Person/place metadata,
   proposal previews, before/after audit data, notifications, and archive assets.
 - Private visibility requires explicit per-item/per-recipient authorization;
@@ -906,7 +1071,9 @@ fail-closed scaffolding, not completed security.
 
 Notifications remain in-app and content-free: only permitted "who did what"
 metadata. Notify reviewers of new requests and contributors of acceptance.
-No decline/cancel/outdated notification. Avoid names/actors that would leak an
+Ordinary proposals have no decline/cancel/outdated notification. Joint-edit
+privacy/deletion requests separately notify eligible editors, notify the Owner
+of declines, and notify affected editors of overrides. Avoid names/actors that would leak an
 excluded item or revoked/private context. Email/push/preferences are deferred.
 
 ## 9. Fresh start and deferred legacy
@@ -927,6 +1094,13 @@ Account-wide inventory/transfer, activation authority, recipient confirmation,
 and archive handling remain separate future decisions. No active legacy grant,
 trigger, or partial account-transfer implementation is included in the SQL.
 
+Normal timeline transfer provides a planned manual legacy handover when the
+current owner can initiate it and the descendant has an account and explicitly
+accepts. All normal proposal-resolution, collaborator-confirmation, and
+private-content rules still apply. This is not post-death/incapacity activation:
+if the owner cannot authorize the transfer, the deferred legacy mechanism is
+still needed. Timeline transfer itself remains proposed, not implemented.
+
 ## 10. Open details before implementation
 
 These are intentionally not silently filled in by the SQL:
@@ -936,16 +1110,18 @@ These are intentionally not silently filled in by the SQL:
    activation and bulk-action confirmation. Single ownership, mixed timeline
    owners, mutual consent to add, either owner's right to remove, and project
    succession are settled in section 2. Timeline access persists through moves.
-3. Private-item permission lifecycle: explicit grants, revocation, and
-   private/shared visibility transitions, including jointly edited content.
+3. Private-item permission implementation: creator-originated visibility changes,
+   eligible joint-editor consent, three-day nonresponse prompts, and explicit
+   Owner overrides of nonresponse or declines are settled in section 2.
+   Specify request/version checks, attribution of superseded edits, eligibility
+   changes during a request, and authorized deletion-request initiation.
    All non-private content follows timeline grants, including future accepted
    contributions; there is no separate per-author audience approval or exclusion.
    Contributor-to-Co-Author promotion accepts eligible pending proposals;
    downgrade/removal preserves them for Owner review, as settled in section 3.
-   Post-removal retention/export and contribution withdrawal are reopened,
-   including jointly edited material, contractual boundaries, and the candidate
-   departure-notification workflow. No automatic authorship-based retention is
-   settled; the explicit irrevocable snapshot grant is a separate agreed exception.
+   Creator-private retention/export and optional irrevocable non-exportable
+   snapshots are settled; no automatic joint-authorship retention or withdrawal
+   entitlement follows from departure. Departure/consent screens need design.
 4. Shared review lifecycle: detailed handling of blocked promotion-time proposals
    and private review context after access changes. Role-change effects,
    editable pending proposals, and continued
@@ -954,9 +1130,12 @@ These are intentionally not silently filled in by the SQL:
    authorized project-wide acceptance of a trusted contributor's backlog.
    Timeline-owner-managed trust and approval/decline by any authorized owner/co-author are settled;
    neither bypasses private-item permissions.
-5. External onward/audience permissions and any interaction between role grants
-   and private-item editing authority. Timeline co-authorship is not a right to
-   view or edit another author's unapproved private content.
+5. Export formats, sender-archive export behavior, and enforcement tests.
+   Owner/Co-Author live export, creator-retained private export, exclusion of
+   others' private content, and no export of granted collaborator snapshots are
+   settled. No extra export-redistribution consent layer; legal rights are out
+   of scope. Private-item editing authority still needs explicit implementation;
+   Co-Author status alone does not grant editing of private content.
 6. Detailed transfer gating, concurrent edits/submissions, private-content
    boundaries, and repeated/multi-party transfers. Recipient confirmation of
    collaborator roles and resolution of all pending proposals before handover
@@ -965,8 +1144,9 @@ These are intentionally not silently filled in by the SQL:
    creator's private content with explicit permission.
 8. Retained pending proposals when private-item access changes, and what the
    former recipient can see after unsharing without regaining live access.
-   Recovery/access to a contributor's own private additions after unsharing
-   also needs an explicit workflow; no copy-on-unshare behavior is assumed.
+   Creator access/export of their own private additions after unsharing is
+   settled; design the orphaned-item view without exposing former parent content.
+   No automatic timeline copy on unshare is assumed.
 9. Revised timeline-role/audience/shared-queue structures, project bulk/future
    grant structures, and actual
    validated payload contracts, derived date calculation, versioned RPCs,
@@ -992,13 +1172,18 @@ These are intentionally not silently filled in by the SQL:
     deletion/recovery workflows, final-placement handling, retention windows,
     and permanent deletion remain open. Organizing entries is MVP scope;
     general-purpose event linking is not.
+12. Event-note forms/presentation, visibility-change confirmation, orphaned
+    private-item views, and revocation/snapshot-grant screens. A separate Add note
+    action with Only me/Timeline collaborators visibility is required; it does
+    not add an event type or replace deferred proposal-linked discussion/chat.
 
 ## Superseded v2 rules
 
 - Authorship alone no longer determines ownership/editing authority after transfer.
 - Ordinary unsharing does not create independent recipient copies.
-- Cancellation applies only to pending proposals; withdrawal of accepted content
-  is reopened rather than an established entitlement or absolute prohibition.
+- Cancellation applies only to pending proposals. Accepted jointly edited content
+  follows the current privacy/deletion consent and Owner-override rules, not
+  unilateral withdrawal by a departed author.
 - Person account linking does not change the reviewer.
 - Single event-level precision is replaced by independent endpoint descriptions.
 - Place does not automatically determine seasonal interpretation.
@@ -1015,7 +1200,9 @@ These are intentionally not silently filled in by the SQL:
   controls and explicit future-timeline grants.
 - Co-authorship does not require a project; eligible owner/co-author review is
   based on timeline authority, not original item authorship.
-- Post-removal authorship-only retention/export is not a settled guarantee.
+- Post-removal general authorship-only retention/export is not granted. Creators
+  retain/export their private additions; optional collaborator snapshots are
+  irrevocable read-only in-app grants without export.
 - Item-by-item transfer selection and pending-review carryover are replaced by
   whole-timeline handover with no pending proposals, recipient-confirmed access,
   and a frozen archive at every transfer.
@@ -1029,3 +1216,9 @@ These are intentionally not silently filled in by the SQL:
   role-directed updates between owner-specific accepted versions after transfer.
   Same-owner placements remain one live event. Source-owner outgoing authority
   does not erase original authorship or authorize private-content propagation.
+- Creator-originated privacy changes and joint-edit privacy/deletion requests
+  replace unresolved withdrawal rules: eligible current editors can object,
+  with three-day nonresponse prompts and explicit recorded Owner overrides.
+- Export is Owner/Co-Author-only for live timelines, includes only the exporter's
+  own private items, and carries distribution trust without another consent
+  layer. Legal rights remain outside app permissions.

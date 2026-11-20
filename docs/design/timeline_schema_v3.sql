@@ -4,7 +4,8 @@
 -- Partial companion: the document's newer project collaboration rules are NOT
 -- modeled here. Timeline roles, private-item authorization, and shared review queues
 -- need a structural redesign; reviewer_user_id still assumes one reviewer.
--- Post-removal retention/export and withdrawal rights remain unresolved.
+-- November 20 private retention/export and joint-edit withdrawal rules are NOT
+-- modeled; historical creator/editor fields do not implement current rights.
 -- MVP explicit same-account multi-timeline event placement is NOT modeled:
 -- events remain timeline-local here; participant links are not placement grants.
 -- Organizing events containing separately typed events/memories are NOT modeled.
@@ -23,6 +24,17 @@
 -- Editable pending proposal revisions, irrevocable snapshot grants, project
 -- entry/exit consent, and owner succession are NOT modeled. Immutable-payload
 -- comments below are historical and must not override the current document.
+-- November 20: event-attached Only me/Timeline collaborators notes, creator-led
+-- privacy changes, eligible joint-editor consent, three-day nonresponse prompts,
+-- and explicit Owner overrides (including declines) need structures/workflows.
+-- Creator-private additions survive revocation without parent access.
+-- Optional irrevocable collaborator snapshots are read-only in-app, no export.
+-- Live export is Owner/Co-Author-only and excludes others' private content even
+-- when viewable. Export/distribution trust does not establish legal rights.
+-- Calendar readiness is a documented extension boundary, NOT BCE/fictional
+-- support here. Positive years 1-9999 and Gregorian DATE bounds remain current
+-- constraints; future calendar identity, stable definitions, authored components,
+-- and explicit comparison domains need revised contracts/storage/calculations.
 -- Assumes Supabase auth.users and anon/authenticated roles exist.
 -- No app policies, RPCs, or grants are supplied: application access is fail-closed.
 -- Ownership, reviewer derivation, date calculation, archive exceptions, media
