@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 23, 2026
+Draft v3, November 6, 2026; updated November 24, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -14,7 +14,7 @@ a **structural design draft**, not a migration, runnable application backend,
 or completed authorization implementation. It deliberately grants no application
 access. The November 23 structural revision replaces the historical single-
 reviewer, timeline-local event, selective-transfer, and settling-review design.
-It models timeline roles, explicit placements, multiple organizing parents,
+It models timeline roles, explicit placements, multiple containing events,
 owner-specific accepted versions, revisioned proposals, consent, private
 transfer/archive authorization, frozen copies, and recovery bookkeeping.
 Table shapes and foreign keys are not completed workflows or authorization.
@@ -44,7 +44,7 @@ browser drafts, not an offline replica or a custom two-way sync engine.
 ### Possible future extensions
 
 Historical timelines could use the same chronological bands, spans, markers,
-parent context, and tags. Non-person subjects such as a city, organization, or
+containing-event context, and tags. Non-person subjects such as a city, organization, or
 historical period, and user-defined event types are possible future extensions,
 not additions to the MVP or changes to its primary personal/character-history
 purpose. The MVP still has one Person/character subject and app-defined types.
@@ -130,7 +130,7 @@ consent. Ordinary private placement never grants access to other collaborators.
 Confirmation cannot substitute for authority the user does not have.
 
 Deduplicate timeline placements in a combined view. An intentional appearance in
-both its type band and its parent's detail view is not a duplicate event record.
+both its type band and its containing event's detail view is not a duplicate event record.
 Authorized, accepted shared-fact edits affect
 every placement; removing one placement does not delete the event from the
 others. Placement does not transfer ownership or independently grant editing
@@ -160,6 +160,12 @@ events already placed on retained timelines at transfer follow section 4.
 
 ### Organizing events and their entries (MVP)
 
+Use **containing event** and **sub-event** for the organizing relationship,
+not parent/child event. An event can be a sub-event of several containing
+events and can itself contain sub-events. These terms imply neither ownership,
+inherited access, nor automatic date containment. A note attached to an event
+is still a note, not a sub-event.
+
 An event can organize related events and memories added at creation or later.
 For example:
 
@@ -175,58 +181,60 @@ occurrence date or a claim that the entry lasted for the entire trip.
 
 Offer "Add an event or memory within this..." from the organizing event, and
 allow an existing entry to be associated with an organizing event when editing.
-Its detail view shows permitted immediate children, not a flattened list of all
-descendants. Open a child to explore its own children. For example, India Trip
+Its detail view shows permitted immediate sub-events, not a flattened list of all
+nested entries. Open a sub-event to explore its own sub-events. For example, India Trip
 can organize Bangalore Visit, which organizes Wedding, which organizes Wedding
 Memories. Open text elaborates on the organizing event itself; a contained
-Memory is a separate entry. Standalone events need no parent.
+Memory is a separate entry. Standalone events need no containing event.
 
-An event can have **multiple organizing parents**, while remaining one event
+An event can have **multiple containing events**, while remaining one event
 with one type and its own placements and visibility. A Wedding can appear under
-both India Trip and Relationship; removing either parent link leaves the other
+both India Trip and Relationship; removing either containment link leaves the other
 intact. This is a directed acyclic graph, not a strict tree. Reject any link
-that would make an event its own ancestor through any path.
+that would make an event contain itself through any path.
 
 There is **no user-facing nesting-depth limit** for MVP. Keep navigation shallow
-instead: show immediate children and navigate into a child, rather than endlessly
+instead: show immediate sub-events and navigate into one, rather than endlessly
 indent an expanding tree. Back follows the route actually taken; a compact
-parent trail provides context, and an **Also part of...** list can expose other
-authorized parents. There is no single universal breadcrumb for a multiply
-parented event. Hidden parents, children, links, and counts must not leak.
+navigation trail provides context, and an **Also part of...** list can expose other
+authorized containing events. There is no single universal breadcrumb for an
+event with multiple containers. Hidden containing events, sub-events, links,
+and counts must not leak.
 
-#### Chronological bands, parent context, and tags
+#### Chronological bands, containing-event context, and tags
 
 Display content chronologically in distinct bands by event type, so employment,
 education, relationships, and other types can be viewed alongside one another.
 Each event has exactly one type, determining its band. An organizing event is
 not a separate type: any suitable event can provide context for related entries.
-A parent's children can have different types. The same Relationship event can
+A containing event's sub-events can have different types. The same Relationship event can
 appear inside a Trip's detail view and independently in the Relationship band,
 without bringing the Trip or its siblings into that band. Both presentations
 refer to the same accepted event, under the existing permission/version rules.
 
-Chronological overlap and explicit parent links are separate. A Trip span,
+Chronological overlap and explicit containment links are separate. A Trip span,
 shorter Bangalore span, and dated Wedding marker can be displayed simultaneously
-at their actual dates without needing parent links to produce visual nesting.
-They can also be explicitly linked as parent and child. Overlap alone creates
-no relationship. Do not copy a parent's dates into a child or infer a duration.
+at their actual dates without needing containment links to produce visual nesting.
+They can also be explicitly linked as containing event and sub-event. Overlap
+alone creates no relationship. Do not copy a containing event's dates into a
+sub-event or infer a duration.
 
 Multiple optional topics/categories (possibly labeled tags) filter across types
-and parent groups. Filtering by "India 2001" can show a wedding, a job offer,
+and containing-event groups. Filtering by "India 2001" can show a wedding, a job offer,
 and individual memories alone, in the chronological/type-band presentation.
-A shared tag neither creates a parent link nor grants access to hidden content.
+A shared tag neither creates a containment link nor grants access to hidden content.
 Final category/tag wording remains open.
 
-Indicate permitted undated child memories with an icon adjacent to the parent
-event's title, whether the parent is shown as a dated marker, within a date span,
-or without a date span. The icon opens those memories through the parent's
-immediate-child view without assigning them a position on the chronological axis.
+Indicate permitted undated sub-event memories with an icon adjacent to the containing
+event's title, whether that event is shown as a dated marker, within a date span,
+or without a date span. The icon opens those memories through the containing event's
+immediate-sub-event view without assigning them a position on the chronological axis.
 Do not reveal inaccessible memories through the icon.
 Undated memories
-without a parent appear in a clearly identified undated group in the Memories
+without a containing event appear in a clearly identified undated group in the Memories
 band, visually separate from dated content with no adjacent date scale implying
-when they occurred. Neither case fabricates a date. The parent-title icon
-resolves display of parented undated memories without a separate dated marker.
+when they occurred. Neither case fabricates a date. The containing-event title icon
+resolves display of contained undated memories without a separate dated marker.
 
 This is a narrow organizing relationship, not general-purpose event linking.
 A job change and a residence change can be entered separately without an
@@ -236,13 +244,13 @@ multiple subjects' timelines; neither relationship implies the other.
 
 #### People, placement, and visibility
 
-When adding a child, suggest the parent's involved people for the user to
-confirm; do not automatically inherit them. Later changes to the parent's people
-do not silently change the child. Keep people involved, explicit timeline
+When adding a sub-event, suggest the containing event's involved people for the
+user to confirm; do not automatically inherit them. Later changes to that event's
+people do not silently change the sub-event. Keep people involved, explicit timeline
 placements, and private/non-private visibility separate.
 
 For example, Mom can add a non-private memory to a shared Wedding while placing
-the memory only on her own timeline. Neither the parent link nor non-private
+the memory only on her own timeline. Neither the containment link nor non-private
 status distributes that memory to the Wedding's other timeline placements.
 Containment does not grant visibility, transfer ownership, or automatically
 share private memories. Parent/entry visibility and derived counts must respect
@@ -250,23 +258,23 @@ audience boundaries, including hidden titles and links.
 
 #### Removal, transfer, and historical relationships
 
-Deleting an organizing event offers preservation of its children or removal of
-associated entries. Show an authorized selectable descendant view, with
+Deleting an organizing event offers preservation of its sub-events or removal of
+associated entries. Show an authorized selectable view of nested entries, with
 individual include/exclude choices and select-all/clear-all shortcuts. Preview
 the affected entries and placements before confirmation. For affected events
 placed on multiple timelines owned by the user, let the user choose this
 timeline only or all their timelines; distinguish placement removal from event
 deletion. Other owners' accepted versions and frozen archives are unaffected.
-Show each affected event only once even if reachable through several parents.
-Preserve multiply parented children by default when deleting an organizer. If
-explicitly selected for deletion, warn about their other authorized parent
+Show each affected event only once even if reachable through several containers.
+Preserve sub-events with multiple containers by default when deleting an organizer.
+If explicitly selected for deletion, warn about their other authorized containing-event
 contexts, including organizers outside the selection, without revealing hidden
 relationships. Selection does not bypass joint-edit consent.
 
-Distinguish removing a parent link, removing a timeline placement, and deleting
-the event itself. A preserved child loses only the removed parent context; it
-keeps other valid parent links, or becomes independent there if none remain.
-Do not silently delete it or assign a new parent. Removing
+Distinguish removing a containment link, removing a timeline placement, and deleting
+the event itself. A preserved sub-event loses only the removed containing-event
+context; it keeps other valid containment links, or becomes independent there
+if none remain. Do not silently delete it or assign a new container. Removing
 only one placement must not break the retained structure on other timelines.
 Removing the last placement prompts for explicit confirmation of deletion into
 recoverable Trash; do not silently create an invisible unplaced event.
@@ -280,32 +288,32 @@ or frozen archives. Retain deleted attachments only as needed for recovery or
 independently authorized retained copies.
 
 Restore content and placements separately. Recovery does not automatically
-reactivate old collaborator access, parent links, or placements that expand the
+reactivate old collaborator access, containment links, or placements that expand the
 audience. Recheck current permissions, versions, and structure. Retain minimal
 deletion/removal history so stale saves and incoming updates cannot resurrect
 deliberately removed content. Exact Trash, expiry, permanent-deletion, and undo
 mechanics still need implementation design.
 
-Whole-timeline transfer follows explicit placements, not a parent's descendant
-tree. Transfer entries placed on the transferred timeline, subject to existing
-private-content rules. Preserve parent links among included entries. A memory
+Whole-timeline transfer follows explicit placements, not an organizer's nested
+entries. Transfer entries placed on the transferred timeline, subject to existing
+private-content rules. Preserve containment links among included entries. A memory
 placed only on Mom's retained timeline does not transfer merely because its
-Wedding parent is on the child's transferred timeline. If the Wedding transfers
-without its Bangalore parent, show it independently; do not copy Bangalore or
+containing Wedding is on the child's transferred timeline. If the Wedding transfers
+without its containing Bangalore event, show it independently; do not copy Bangalore or
 grant access to it implicitly.
 
 Retain an inactive historical relationship to support possible reconciliation,
 not an invisible active connection. Restoration requires explicit action and
 fresh permission, version/conflict, and structural checks; history grants no
-access or ownership and must not expose an inaccessible parent's metadata.
+access or ownership and must not expose an inaccessible containing event's metadata.
 Transfer preserves active links only where both endpoints are included and
 authorized. Restoring one historical link does not reactivate every former
-parent relationship.
+containment relationship.
 A retained link alone does not preserve deleted event content. The recovery
 window is 30 days as above; detailed restore/undo workflows still need design.
-Multiple parents, no user-facing depth limit, and cycle rejection are settled.
+Multiple containing events, no user-facing depth limit, and cycle rejection are settled.
 Precise ordering/navigation controls, transactional cycle-check implementation,
-and dates outside a parent's span still need specification.
+and dates outside a containing event's span still need specification.
 
 ## 2. Sharing is live access, not ownership
 
@@ -454,14 +462,14 @@ It has its own author and a visibility choice: **Only me** or **Timeline
 collaborators**. Examples include "Look up this address" or a clarification
 about moving between two residences during a period.
 
-Owner/Co-Author notes can be added without editing the parent event. A
+Owner/Co-Author notes can be added without editing the associated event. A
 Contributor's shared addition follows the proposal rules; a creator-only
 private note or event is added and edited directly, without Owner approval.
 Private notes are hidden even from the timeline Owner in ordinary use; only
 explicit transfer/archive inclusion creates the stated read-only exception.
-Adding a note does not privatize the parent event or create an
+Adding a note does not privatize the associated event or create an
 entry in an event-type band. A shared note respects its timeline audience;
-attachment alone does not distribute it to the parent's other placements.
+attachment alone does not distribute it to the associated event's other placements.
 This lightweight event-note feature is required; proposal-linked discussion/chat
 remains separately deferred. Detailed note forms and presentation need design.
 
@@ -526,7 +534,7 @@ work or retain approval/veto rights. Disputes outside these app permissions are
 for participants to resolve outside the app.
 
 A creator retains access to their own private events and notes after revocation,
-and may export those retained private items. This does not retain the parent
+and may export those retained private items. This does not retain the associated
 event or surrounding timeline content. Carol's private note remains accessible
 while Bob's event is no longer viewable. Parent links become inactive historical
 relationships and must not reveal inaccessible titles, dates, media, or later
@@ -1083,7 +1091,7 @@ The structural table map is:
 | item_identity, owner_item, item_revision, revision_lineage, accepted_authorship | Common provenance, owner-specific accepted representations, creator identity, exact revisions, upstream lineage, and accepted authorship. |
 | person_revision, event_revision, note_revision, media_revision, date_endpoint | Typed revision facts, multiple notes, authored date precision/wording, and Gregorian-only calendar identity and bounds. |
 | place, place_revision, topic, topic_revision, revision_person, revision_topic | Revision-specific places, tags, participants, and labels without implicit timeline placement. |
-| item_placement, placement_revision, event_edge, edge_revision, item_attachment, attachment_revision | Explicit timeline appearances, multiple organizing parents, note/media context, and removed/inactive relationship history. |
+| item_placement, placement_revision, event_edge, edge_revision, item_attachment, attachment_revision | Explicit timeline appearances, multiple containing events, note/media context, and removed/inactive relationship history. |
 | proposal, proposal_revision, proposal_decision, timeline_trust, owner_review_action | Shared review queues, same-request revisions, exact reviewed decisions, and Owner-authorized trust/promotion/backlog actions. |
 | consent_request, consent_revision, consent_placement, consent_eligibility, consent_response, consent_override, consent_outcome | Version/action/placement-specific requests, accepted-history eligibility, individual responses, and explicit Owner overrides. |
 | timeline_transfer, transfer_manifest, transfer_role_confirmation, private_inclusion_authorization, private_inclusion_item | Whole-timeline inventory, recipient-confirmed roles, expected versions, and separate creator-authorized private read/frozen-retention selections. |
@@ -1129,7 +1137,7 @@ The current application's migrations and storage are unchanged.
   never applies a privacy change or deletion.
 - Enforce export restrictions server-side, including exclusion of others'
   private content even if viewable. Retained private-item export must not fetch
-  inaccessible parent context; granted collaborator snapshots have no export.
+  inaccessible associated-event context; granted collaborator snapshots have no export.
 - RLS must protect accepted content, private layers, Person/place metadata,
   proposal previews, before/after audit data, notifications, and archive assets.
 - Private viewing/editing is creator-only in ordinary MVP use. Transfer read
@@ -1238,7 +1246,7 @@ These are intentionally not silently filled in by the SQL:
 8. Retained pending proposals when timeline access changes, and what the
    former recipient can see after unsharing without regaining live access.
    Creator access/export of their own private additions after unsharing is
-   settled; design the orphaned-item view without exposing former parent content.
+   settled; design the orphaned-item view without exposing former associated-event content.
    No automatic timeline copy on unshare is assumed.
 9. Implement and verify the structural draft's timeline roles, shared queues,
    and project bulk/future grants through validated payload contracts,
@@ -1255,13 +1263,13 @@ These are intentionally not silently filled in by the SQL:
     route/deduplication algorithms; ambiguous routes pause rather than bypass
     revocation.
 11. Organizing-event/entry implementation: precise ordering/navigation controls,
-    transactional cycle prevention, and dates outside a parent's span. Multiple
-    parents with no user-facing depth limit, path-based Back navigation, and
-    authorized alternative-parent navigation are settled. Section 1
-    settles type bands, immediate-child drill-down, explicit parent links versus
+    transactional cycle prevention, and dates outside a containing event's span.
+    Multiple containers with no user-facing depth limit, path-based Back navigation,
+    and authorized alternative-container navigation are settled. Section 1
+    settles type bands, immediate-sub-event drill-down, explicit containment links versus
     chronological overlap, tag filtering, suggested rather than inherited people,
-    independent placements, undated-memory display (parent-title icon for parented
-    memories; separate undated group for parentless memories), and placement-based
+    independent placements, undated-memory display (containing-event title icon
+    for contained memories; separate undated group for uncontained memories), and placement-based
     transfer. Permission enforcement still needs policies, transactional writes,
     and tests.
     Deletion selection, inactive history, 30-day Trash, explicit permanent
