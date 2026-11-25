@@ -1,6 +1,6 @@
 # Timeline workflow inventory
 
-Derived November 20, 2026; updated November 24, 2026, from the
+Derived November 20, 2026; updated November 25, 2026, from the
 [proposed data model v3](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29%20v3.md).
 This user-workflow inventory is separate from the GitHub issue backlog.
 These are planned flows, not a claim that they are implemented.
@@ -11,7 +11,7 @@ The data model remains the canonical source of product rules.
 
 | ID | Workflow |
 | --- | --- |
-| W01 | Create a Person/character and a timeline about that subject. |
+| W01 | Start with Create Person then create its timeline, or Create timeline then select/create its Person/character subject. A Person may precede a timeline; a completed timeline requires a subject. |
 | W02 | Request and give consent to link a Person to a user account, without granting timeline access. |
 | W03 | Add or edit a subject's birthdate; show only authorized derived ages and birthday markers. |
 | W04 | Create a project and organize timelines within it. |
@@ -23,7 +23,7 @@ The data model remains the canonical source of product rules.
 
 | ID | Workflow |
 | --- | --- |
-| W08 | Create or edit an event: choose one type/template, enter title, details, people, place, tags, and dates. Preserve content when switching templates. |
+| W08 | Use the same event editor from onboarding, a timeline, Add sub-event from a saved event, or a global menu command. Choose one type/template, title, details, people, place, tags, dates, and explicit visibility/placements. Choose/create a timeline and subject if needed; preserve the draft through setup. |
 | W09 | Add an event to additional owned timelines; confirm any authorized audience expansion. |
 | W10 | Remove a timeline placement without deleting the event's other placements. |
 | W11 | Add a sub-event/memory from its containing event; confirm suggested people and independently choose placements/privacy. |
@@ -88,6 +88,13 @@ The data model remains the canonical source of product rules.
 | W45 | Browse the sender's frozen archive; compare it with the live timeline only where current access permits. |
 | W46 | Send accepted event-in-common updates under the source owner's destination role; accept/decline proposals independently where applicable. |
 | W47 | Compare baseline/current/incoming versions; keep yours, accept theirs, or combine with current authority. Conflicts pause automation; restored access offers catch-up, not backlog replay. Suppress declined revisions and ambiguous routes. **Detailed merge UI/routing remains open.** |
+
+## Guest onboarding and account conversion
+
+| ID | Workflow |
+| --- | --- |
+| W48 | Choose Create account or Try it first. Guest content is local to the browser or future native device storage, not account-saved. Explain local-loss risks without implying offline replication. |
+| W49 | Preserve guest work through signup/verification, explicitly review its import and destination account, upload idempotently, and retain recoverable drafts until server acknowledgment. Never silently import guest data into a subsequent account on a shared device. |
 
 ## Cross-cutting paths easy to miss
 

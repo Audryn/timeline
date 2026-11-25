@@ -1,6 +1,6 @@
 # Life Timeline App: Revised Draft Data Model (MVP)
 
-Draft v3, November 6, 2026; updated November 24, 2026
+Draft v3, November 6, 2026; updated November 25, 2026
 
 Companion: [timeline_schema_v3.sql](timeline_schema_v3.sql).
 Previous proposal: [Draft v2](Life%20Timeline%20App%20Draft%20Data%20Model%20%28MVP%29.md).
@@ -64,12 +64,35 @@ implementation #15-#25, and deferred capabilities #26-#31, categorized with
 issue means the decision is documented, not that the feature is implemented.
 Resolve relevant design prerequisites before implementing and verifying behavior.
 
-The linked workflow inventory enumerates planned user flows W01-W47, including
+The linked workflow inventory enumerates planned user flows W01-W49, including
 cross-cutting save, conflict, recovery, and access-change paths. It is a
 supporting checklist, not a separate authority or a claim of implemented behavior.
 The historical-subject, custom-type, and BCE-readiness ideas were discussed after
 the initial issue list was created; no separate issues for those additions have
 yet been created.
+
+### Account creation or trying it first
+
+Onboarding offers **Create account** or **Try it first**. Guest users can start
+their own local timeline content without an account. On web, guest work is
+stored in browser-local draft storage; a future native iOS client uses
+app-private local storage instead. This is a trial/draft workspace, not a
+cloud account, full offline replica, or two-way synchronization system.
+
+Clearly distinguish **Stored in this browser/on this device** from
+**Saved to your account**. Browser-data clearing or app removal can lose local
+work; native backup behavior still requires an explicit privacy policy.
+Preserve guest work through signup, verification, interrupted navigation, and
+failed or uncertain uploads. Saving it to an account requires explicit review
+and confirmation of the destination account, especially on shared devices.
+Only server acknowledgment marks it account-saved. Use idempotent uploads and
+retain recoverable local work until acknowledgment; never silently replay it
+into whichever account next signs in.
+
+Guest storage must be separate from authenticated account-scoped drafts.
+Guest trial boundaries, local recovery/import screens, native storage/backup
+details, and import contracts remain to be specified. The current app and
+structural SQL do not implement guest mode.
 
 ## 1. Identity, ownership, and provenance
 
@@ -108,6 +131,29 @@ yet been created.
   data must also remain independent where an archive or transfer requires it.
 
 ### One event on multiple timelines (MVP)
+
+#### Flexible creation entry points
+
+Creation can begin with a Person, timeline, or event:
+
+- **Create Person -> Create timeline for this Person.** A Person can exist
+  before a timeline; account linkage or invitation is not required.
+- **Create timeline -> Select an existing Person or create one.** A completed
+  MVP timeline still requires exactly one Person/character subject.
+- **Create event -> Choose an existing timeline or create one**, selecting
+  or creating its subject as needed. Preserve the event draft through these
+  steps. Do not create an invisible accepted event without a placement.
+
+Use one event editor from onboarding/guest trial, a timeline's **Add event**,
+a saved event's **Add sub-event**, or a global **Add event** menu command.
+The current timeline is initially selected when entering from that timeline.
+From a saved event, initialize its containing-event relationship and suggest
+involved people for confirmation, without inheriting privacy or additional
+timeline placements. Other entry paths prompt for placement before completion.
+Context supplies defaults, not permission; all paths retain the same explicit
+visibility/placement choices, date interpretation, and role-dependent
+direct-save/proposal behavior. Guest content remains locally stored, and
+authenticated content becomes account-saved only after server acknowledgment.
 
 Keep **People involved** separate from **Show on timelines** in the event editor.
 For example, while recording a birth on a parent's timeline, adding the child
